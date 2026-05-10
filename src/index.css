@@ -1,0 +1,253 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Theme Tokens ===== */
+:root,
+.theme-default {
+  --bg: 11 13 18;
+  --surface: 18 22 30;
+  --surface2: 26 32 42;
+  --border: 38 46 60;
+  --text: 230 234 240;
+  --muted: 148 158 175;
+  --accent: 184 148 84;
+  --accent2: 230 200 130;
+
+  --career: 96 165 250;
+  --health: 74 222 128;
+  --relationships: 248 113 113;
+  --finance: 245 158 11;
+  --learning: 168 85 247;
+  --mind: 45 212 191;
+
+  --common: 156 163 175;
+  --rare: 96 165 250;
+  --epic: 168 85 247;
+  --legendary: 250 204 21;
+}
+
+/* Forge — dark steel + amber */
+.theme-forge {
+  --bg: 14 12 10;
+  --surface: 24 20 16;
+  --surface2: 38 30 22;
+  --border: 64 50 36;
+  --text: 240 230 215;
+  --muted: 168 152 130;
+  --accent: 217 119 6;
+  --accent2: 251 191 36;
+}
+
+/* Scholar — dark academia */
+.theme-scholar {
+  --bg: 24 19 14;
+  --surface: 38 30 22;
+  --surface2: 54 42 30;
+  --border: 78 60 42;
+  --text: 240 226 200;
+  --muted: 180 158 130;
+  --accent: 161 98 7;
+  --accent2: 217 162 79;
+}
+
+/* Neon Monk — teal glow */
+.theme-neon {
+  --bg: 8 14 18;
+  --surface: 12 22 28;
+  --surface2: 16 32 40;
+  --border: 24 60 70;
+  --text: 218 245 245;
+  --muted: 124 168 178;
+  --accent: 20 184 166;
+  --accent2: 94 234 212;
+}
+
+/* Samurai — charcoal red */
+.theme-samurai {
+  --bg: 12 12 12;
+  --surface: 22 18 18;
+  --surface2: 32 22 22;
+  --border: 60 28 28;
+  --text: 240 232 228;
+  --muted: 168 148 144;
+  --accent: 220 38 38;
+  --accent2: 248 113 113;
+}
+
+/* Arctic — cold whites */
+.theme-arctic {
+  --bg: 8 14 22;
+  --surface: 14 22 32;
+  --surface2: 22 32 44;
+  --border: 36 56 78;
+  --text: 232 244 255;
+  --muted: 138 168 200;
+  --accent: 96 165 250;
+  --accent2: 191 219 254;
+}
+
+/* Verdant — invented: forest green sage */
+.theme-verdant {
+  --bg: 8 16 12;
+  --surface: 14 26 20;
+  --surface2: 22 38 30;
+  --border: 36 64 48;
+  --text: 230 244 234;
+  --muted: 140 178 152;
+  --accent: 34 197 94;
+  --accent2: 134 239 172;
+}
+
+/* Obsidian — invented: deep void purple */
+.theme-obsidian {
+  --bg: 12 8 16;
+  --surface: 22 14 32;
+  --surface2: 34 22 50;
+  --border: 64 40 90;
+  --text: 232 224 248;
+  --muted: 162 142 200;
+  --accent: 147 51 234;
+  --accent2: 196 132 252;
+}
+
+/* Solstice — invented: warm gold sunset */
+.theme-solstice {
+  --bg: 18 12 8;
+  --surface: 32 22 14;
+  --surface2: 48 32 18;
+  --border: 88 56 28;
+  --text: 250 232 200;
+  --muted: 200 162 120;
+  --accent: 234 88 12;
+  --accent2: 250 204 21;
+}
+
+/* Voidwalker — invented: monochrome high-contrast */
+.theme-void {
+  --bg: 0 0 0;
+  --surface: 12 12 12;
+  --surface2: 24 24 24;
+  --border: 60 60 60;
+  --text: 250 250 250;
+  --muted: 160 160 160;
+  --accent: 245 245 245;
+  --accent2: 200 200 200;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Subtle global noise/grain for premium feel */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(
+      ellipse at top,
+      rgb(var(--accent) / 0.06),
+      transparent 60%
+    ),
+    radial-gradient(ellipse at bottom, rgb(var(--accent2) / 0.04), transparent 60%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== Utilities ===== */
+.glass {
+  background: rgb(var(--surface) / 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(var(--border) / 0.7);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.hairline {
+  border: 1px solid rgb(var(--border));
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--bg));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--surface2));
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--border));
+}
+
+/* Particle-style stars for celebrations */
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: rgb(var(--accent2));
+  box-shadow: 0 0 8px rgb(var(--accent2));
+}
+
+/* Shimmer treatment for legendary cards */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--surface)) 0%,
+    rgb(var(--accent) / 0.25) 50%,
+    rgb(var(--surface)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+/* Selection */
+::selection {
+  background: rgb(var(--accent) / 0.4);
+  color: rgb(var(--text));
+}
+
+/* Buttons reset */
+button {
+  font-family: inherit;
+}
+
+/* Focus rings */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hide tap highlight on touch */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
