@@ -18,6 +18,8 @@ const targets = [
   ['pwa-192x192.png', 192],
   ['pwa-512x512.png', 512],
   ['maskable-512x512.png', 512],
+  // App Store / Play Store: the 1024×1024 master icon (Xcode & Play Console both want this)
+  ['icon-1024.png', 1024],
   // Favicon fallback
   ['favicon-32x32.png', 32],
 ]
