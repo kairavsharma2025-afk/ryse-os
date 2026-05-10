@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Bot, Moon, Smartphone } from 'lucide-react'
 import { useSettings } from '@/stores/settingsStore'
 import { useCharacter } from '@/stores/characterStore'
@@ -353,6 +354,13 @@ export function Settings() {
           Reset everything
         </Button>
       </Card>
+
+      <div className="text-center text-[11px] text-muted/70 pt-2">
+        <Link to="/privacy" className="hover:text-accent transition-colors">
+          Privacy policy
+        </Link>{' '}
+        · Ryse keeps everything on your device.
+      </div>
     </div>
   )
 }

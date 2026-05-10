@@ -12,6 +12,7 @@ import { Skills } from '@/pages/Skills'
 import { Settings } from '@/pages/Settings'
 import { Schedule } from '@/pages/Schedule'
 import { Reminders } from '@/pages/Reminders'
+import { Privacy } from '@/pages/Privacy'
 import { SeasonPage } from '@/pages/SeasonPage'
 import { Finite } from '@/pages/modules/Finite'
 import { Ritual } from '@/pages/modules/Ritual'
@@ -27,6 +28,14 @@ export default function App() {
     return (
       <Routes>
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route
+          path="/privacy"
+          element={
+            <div className="min-h-full p-4 md:p-8">
+              <Privacy />
+            </div>
+          }
+        />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     )
@@ -53,6 +62,7 @@ export default function App() {
         <Route path="/silence" element={<Silence />} />
         <Route path="/values" element={<Values />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

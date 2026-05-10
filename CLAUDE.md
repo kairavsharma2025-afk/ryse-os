@@ -90,6 +90,12 @@ Single-page React app, no backend, everything on device.
   `hooks/useInstallPrompt` powers the "Install Ryse" card in Settings (`beforeinstallprompt` on
   Chrome/Android; manual hint on iOS Safari). Deployed on Vercel — `vercel.json` sets framework/build/
   output, an SPA rewrite, and `no-cache` on `/sw.js`.
+- Native shells (for the app stores): Capacitor — `capacitor.config.ts` (`appId: app.ryse`, `webDir: dist`),
+  `android/` (Gradle, build in Android Studio) + `ios/` (Xcode + SPM, build on a Mac). The copied web
+  assets / build artifacts inside those folders are gitignored — regenerate with `npm run cap:sync`
+  (= `npm run build && npx cap sync`); `npm run android` / `npm run ios` also open the IDE. No `@capacitor/*`
+  imports in `src/` (web build is independent). `pages/Privacy` (route `/privacy`, reachable pre-onboarding
+  too) — store-required privacy policy; the contact email in it is a `TODO` placeholder.
 
 ## Run
 ```
