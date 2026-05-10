@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bot, Moon } from 'lucide-react'
+import { Bot, Moon, Smartphone } from 'lucide-react'
 import { useSettings } from '@/stores/settingsStore'
 import { useCharacter } from '@/stores/characterStore'
 import { Card } from '@/components/ui/Card'
@@ -8,12 +8,14 @@ import { THEMES } from '@/data/themes'
 import { Pill } from '@/components/ui/Pill'
 import { clearAll } from '@/stores/persist'
 import { ASSISTANT_MODEL } from '@/engine/claudeApi'
+import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 
 export function Settings() {
   const settings = useSettings()
   const c = useCharacter()
   const [showKey, setShowKey] = useState(false)
   const keySet = !!settings.anthropicApiKey?.trim()
+  const { canPrompt, promptInstall, installed, isIOSSafari } = useInstallPrompt()
 
   const notifPerm: NotificationPermission | 'unsupported' =
     typeof window !== 'undefined' && 'Notification' in window
@@ -86,6 +88,38 @@ export function Settings() {
           )}
         </div>
       </Card>
+
+      {!installed && (
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Smartphone className="w-5 h-5 text-accent" strokeWidth={1.8} />
+            <h3 className="font-display text-lg">Install Ryse</h3>
+          </div>
+          {canPrompt ? (
+            <>
+              <p className="text-xs text-muted leading-relaxed mb-3">
+                Add Ryse to your home screen — full-screen, its own app icon, works offline-ish.
+              </p>
+              <Button onClick={() => void promptInstall()}>
+                <Smartphone className="w-3.5 h-3.5" />
+                Install on this device
+              </Button>
+            </>
+          ) : isIOSSafari ? (
+            <p className="text-xs text-muted leading-relaxed">
+              On iPhone/iPad: tap <span className="text-text">Share</span>, then{' '}
+              <span className="text-text">&ldquo;Add to Home Screen&rdquo;</span>. Ryse then opens
+              full-screen with its own icon.
+            </p>
+          ) : (
+            <p className="text-xs text-muted leading-relaxed">
+              Use your browser&apos;s menu → <span className="text-text">&ldquo;Install app&rdquo;</span>{' '}
+              / <span className="text-text">&ldquo;Add to Home Screen&rdquo;</span> to run Ryse as a
+              standalone app.
+            </p>
+          )}
+        </Card>
+      )}
 
       <Card className="p-5">
         <h3 className="font-display text-lg mb-3">Theme</h3>

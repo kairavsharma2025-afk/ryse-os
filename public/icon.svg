@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ryse">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e6c882"/>
+      <stop offset="1" stop-color="#b89454"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.62" r="0.6">
+      <stop offset="0" stop-color="#b89454" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#b89454" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0b0d12"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round" stroke-width="42">
+    <path d="M132 332 L256 206 L380 332"/>
+    <path d="M164 412 L256 318 L348 412"/>
+  </g>
+  <circle cx="256" cy="138" r="24" fill="url(#gold)"/>
+</svg>

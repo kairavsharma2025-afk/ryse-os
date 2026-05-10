@@ -82,6 +82,11 @@ Single-page React app, no backend, everything on device.
 - Class is fixed by user choice at onboarding but auto-recomputes from stat rankings.
 - Streak shields auto-grant once per month; spend via `actionApplyShield`.
 - Boss battles inherit HP from `data/bossNames.ts` heuristics if user doesn't name them.
+- PWA: `public/manifest.webmanifest` + `public/sw.js` (minimal app-shell/runtime cache, bump `CACHE`
+  in it to invalidate) + apple meta tags in `index.html`; `main.tsx` registers the SW in PROD only.
+  `public/icon.svg` is the (maskable) app icon. `hooks/useInstallPrompt` powers the "Install Ryse"
+  card in Settings (`beforeinstallprompt` on Chrome/Android; manual hint on iOS Safari).
+  Deployed on Vercel — `vercel.json` sets framework/build/output, an SPA rewrite, and `no-cache` on `/sw.js`.
 
 ## Run
 ```

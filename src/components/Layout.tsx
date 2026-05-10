@@ -202,7 +202,7 @@ export function Layout() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur border-t border-border flex overflow-x-auto">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur border-t border-border flex overflow-x-auto pb-[env(safe-area-inset-bottom)]">
         {[
           findNav('/'),
           findNav('/schedule'),
