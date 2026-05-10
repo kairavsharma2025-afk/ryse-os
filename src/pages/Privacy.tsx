@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/Card'
 
 // Privacy-policy contact. Both Google Play and the App Store require a working
 // address here — swap it for whatever inbox you want bots/users to reach.
-const CONTACT_EMAIL = 'kairavsharma.2025@associate.scmspune.ac.in'
+const CONTACT_EMAIL = 'kairavs270207@gmail.com'
 
 const LAST_UPDATED = 'May 10, 2026'
 

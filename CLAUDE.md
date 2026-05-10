@@ -111,7 +111,7 @@ Single-page React app, no backend, everything on device.
   in `runOpeningTick` and re-runs on reminders/birthdays store changes; it's a no-op on the web (where
   `useReminderEngine`'s 30s poll handles notifications — that path skips raising browser notifications when
   `Capacitor.isNativePlatform()`). `pages/Privacy` (route `/privacy`, reachable pre-onboarding too) — the
-  store-required privacy policy; its `CONTACT_EMAIL` is the git-config address (swap as needed).
+  store-required privacy policy; `CONTACT_EMAIL` constant at the top of the file (swap as needed).
 
 ## Run
 ```
