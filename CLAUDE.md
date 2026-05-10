@@ -30,21 +30,31 @@ Single-page React app, no backend, everything on device.
   `assistantActions` (`askAssistant`, `generateDailyPlan`, parses `lifeos-actions` blocks
   the model emits to create reminders/events).
 - `src/hooks/useReminderEngine` — 30s poll fired from Layout; raises desktop + in-app
-  notifications for due reminders; requests Notification permission on first load.
-- Reminders model (`types.Reminder`): repeat `once|daily|weekly|monthly`, optional `priority`
-  (`low|normal|high`), optional `goalId` link, and `snoozedUntil` (one-shot 10-min snooze via
-  `remindersStore.snoozeReminder`). `remindersEngine` (`occursOn`/`fireTimeOn`/`nextFireTime`)
-  handles all four cadences, the snooze override, and `settings.quietHours` (`{from,to}` HH:mm —
-  fires that would land in the window defer to `to`, passed as the optional last arg to those fns).
+  notifications for due reminders **and birthdays** (day-of + a "tomorrow" heads-up, tracked per
+  birthday); requests Notification permission on first load.
+- Reminders model (`types.Reminder`): repeat `once|daily|weekly|monthly|yearly`, optional `priority`
+  (`low|normal|high`), optional `goalId` link, `snoozedUntil` (one-shot 10-min snooze via
+  `remindersStore.snoozeReminder`), and `source` (`manual|assistant|meal|wake|birthday`).
+  `remindersEngine` (`occursOn`/`fireTimeOn`/`nextFireTime`) handles all cadences, the snooze
+  override, and `settings.quietHours` (`{from,to}` HH:mm — fires in that window defer to `to`,
+  passed as the optional last arg). `engine/dailyRemindersSync` upserts/deletes the auto-managed
+  `source:'wake'` / `source:'meal'` daily reminders from Settings (wakeAlarm / mealReminders +
+  the wake/breakfast/lunch/dinner times); `syncRoutineReminders()` runs in `runOpeningTick`.
+- Birthdays: `birthdaysStore` (`{name, month, day, relation?}`), `/birthdays` page, "Life" nav entry;
+  notifications fire from `useReminderEngine`.
+- Ride nudges (side feature, not in the nav): `engine/nudges.ts` derives an `ActiveNudge` from
+  today's schedule (around `category:'career'` events whose title matches `/office|work|commute/`);
+  `components/assistant/SmartNudge.tsx` shows a floating "book an Uber?" card (Uber/Ola deep links).
+  Toggle + lead-time live in Settings (`rideNudges` / `officeLeaveLeadMin`).
 - `src/components` — UI primitives (`ui/`), Layout, celebrations (overlays + toast),
   home widgets (incl. `AiPlanCard`, `UpcomingReminders`), `assistant/*` (drawer panel,
-  FAB, `RichText` mini-markdown), `schedule/EventForm`, `character/Avatar` (circular
+  FAB, `SmartNudge`, `RichText` mini-markdown), `schedule/EventForm`, `character/Avatar` (circular
   avatar — renders the minimal flat OpenMoji SVG picture for the avatar's name-matched
   emoji from `AVATAR_OPTIONS` in `components/icons.tsx` (35 options), falling back to the
   emoji glyph if the CDN is unreachable; `avatarEmoji(id)` helper lives there too).
-- `src/pages` — Onboarding, Home (Today), Schedule, Reminders, Goals + GoalDetail,
-  Profile, Achievements, Loot, Skills, Settings, SeasonPage, plus `pages/modules/*`
-  for the seven modules.
+- `src/pages` — Onboarding (6 steps; step 5 = wake/meal times + birthdays), Home (Today), Schedule,
+  Reminders, Birthdays, Goals + GoalDetail, Profile, Achievements, Loot, Skills, Settings, Privacy,
+  SeasonPage, plus `pages/modules/*` for the seven modules.
 
 ## AI assistant
 - Disabled until the user pastes an Anthropic API key in Settings (`settings.anthropicApiKey`,

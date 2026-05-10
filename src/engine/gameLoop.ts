@@ -17,6 +17,7 @@ import { masteryForArea } from './masteryEngine'
 import { getAchievement } from '@/data/achievements'
 import { THEMES } from '@/data/themes'
 import { seedOnce, seedGoalsOnce } from '@/data/seed'
+import { syncRoutineReminders } from './dailyRemindersSync'
 import type { LootItem, ModuleId, Rarity, Achievement } from '@/types'
 import { AREA_IDS } from '@/types'
 import { nowISO, todayISO, daysBetween } from './dates'
@@ -61,6 +62,7 @@ export function runOpeningTick() {
   if (!char.initialised) return
   char.recordOpened()
   seedGoalsOnce()
+  syncRoutineReminders()
   useSeason.getState().ensureNotExpired()
   useQuests.getState().ensureToday()
   recomputeStats()

@@ -358,6 +358,15 @@ export interface Settings {
   weeklyReviewDay: number // 0-6, Sunday=0
   anthropicApiKey: string // for the AI assistant; '' = disabled
   quietHours?: { from: string; to: string } // HH:mm; reminders in this window defer to `to`
+  // Daily routine — backed by auto-managed daily reminders (source 'wake' / 'meal').
+  wakeAlarm: boolean // fire a wake-up nudge at wakeTime
+  mealReminders: boolean // fire reminders at breakfast/lunch/dinner times
+  breakfastTime: string // HH:mm
+  lunchTime: string // HH:mm
+  dinnerTime: string // HH:mm
+  // Ride nudges (side feature) — proactive "time to leave the office, book an Uber?" card.
+  rideNudges: boolean
+  officeLeaveLeadMin: number // minutes before the office block ends to nudge
 }
 
 // ===== Schedule =====
@@ -376,25 +385,41 @@ export interface ScheduleEvent {
 
 // ===== Reminders =====
 
-export type ReminderRepeat = 'once' | 'daily' | 'weekly' | 'monthly'
+export type ReminderRepeat = 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 export type ReminderPriority = 'low' | 'normal' | 'high'
+
+export type ReminderSource = 'manual' | 'assistant' | 'meal' | 'wake' | 'birthday'
 
 export interface Reminder {
   id: string
   title: string
-  date: string // YYYY-MM-DD — first/anchor date (also the day-of-week for weekly, day-of-month for monthly)
+  date: string // YYYY-MM-DD — first/anchor date (day-of-week for weekly; day-of-month for monthly; month+day for yearly)
   time: string // HH:mm (24h)
   repeat: ReminderRepeat
   category: AreaId
   notes?: string
   createdAt: string
-  source?: 'manual' | 'assistant'
+  source?: ReminderSource
   lastFiredOn?: string // YYYY-MM-DD it last fired
   done?: boolean // 'once' reminders done; or manually completed
   priority?: ReminderPriority // defaults to 'normal'
   goalId?: string // optional link to a Goal
   snoozedUntil?: string // ISO datetime — overrides the next fire time once
+}
+
+// ===== Birthdays =====
+
+export interface Birthday {
+  id: string
+  name: string
+  month: number // 1-12
+  day: number // 1-31
+  relation?: string // e.g. "Mom", "best friend"
+  notes?: string
+  createdAt: string
+  lastNotifiedOn?: string // YYYY-MM-DD the "today" notification last fired
+  lastHeraldedOn?: string // YYYY-MM-DD the "tomorrow" heads-up last fired
 }
 
 // ===== AI Assistant =====

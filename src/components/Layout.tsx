@@ -12,6 +12,7 @@ import { useReminderEngine } from '@/hooks/useReminderEngine'
 import { CelebrationHost } from '@/components/celebrations/CelebrationHost'
 import { AssistantPanel } from '@/components/assistant/AssistantPanel'
 import { AssistantFab } from '@/components/assistant/AssistantFab'
+import { SmartNudge } from '@/components/assistant/SmartNudge'
 import { Avatar } from '@/components/character/Avatar'
 import { NAV_ICONS, type LucideIcon } from '@/components/icons'
 import { Bot } from 'lucide-react'
@@ -47,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Life',
     items: [
+      { to: '/birthdays', label: 'Birthdays' },
       { to: '/finite', label: 'Finite' },
       { to: '/values', label: 'Values' },
       { to: '/silence', label: 'Silence' },
@@ -236,6 +238,7 @@ export function Layout() {
         ))}
       </nav>
 
+      <SmartNudge />
       <AssistantPanel />
       <AssistantFab />
       <CelebrationHost />

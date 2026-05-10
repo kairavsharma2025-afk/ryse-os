@@ -15,13 +15,30 @@ import {
   AVATAR_OPTIONS,
   BellRing,
 } from '@/components/icons'
+import { Sunrise, Cake, X } from 'lucide-react'
 import { Avatar } from '@/components/character/Avatar'
+import { useBirthdays } from '@/stores/birthdaysStore'
+import { syncRoutineReminders } from '@/engine/dailyRemindersSync'
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const REF_YEAR = 2000
+const fromDateInput = (s: string): { month: number; day: number } => {
+  const p = s.split('-').map(Number)
+  return { month: p[1] || 1, day: p[2] || 1 }
+}
+
+interface DraftBirthday {
+  name: string
+  month: number
+  day: number
+}
 
 export function Onboarding() {
   const nav = useNavigate()
   const initialise = useCharacter((s) => s.initialise)
   const addGoal = useGoals((s) => s.addGoal)
   const setSetting = useSettings((s) => s.set)
+  const addBirthday = useBirthdays((s) => s.addBirthday)
 
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
@@ -29,6 +46,23 @@ export function Onboarding() {
   const [classId, setClassId] = useState<CharacterClassId>('builder')
   const [goalArea, setGoalArea] = useState<AreaId>('career')
   const [goalTitle, setGoalTitle] = useState('')
+
+  // step 5 — daily routine + birthdays
+  const [wakeT, setWakeT] = useState('07:00')
+  const [breakfastT, setBreakfastT] = useState('08:00')
+  const [lunchT, setLunchT] = useState('13:00')
+  const [dinnerT, setDinnerT] = useState('20:00')
+  const [routineReminders, setRoutineReminders] = useState(true)
+  const [draftBirthdays, setDraftBirthdays] = useState<DraftBirthday[]>([])
+  const [bdName, setBdName] = useState('')
+  const [bdDate, setBdDate] = useState(`${REF_YEAR}-01-01`)
+
+  const addDraftBirthday = () => {
+    if (!bdName.trim()) return
+    const { month, day } = fromDateInput(bdDate)
+    setDraftBirthdays((bs) => [...bs, { name: bdName.trim(), month, day }])
+    setBdName('')
+  }
 
   const next = () => setStep((s) => s + 1)
   const prev = () => setStep((s) => Math.max(0, s - 1))
@@ -48,6 +82,16 @@ export function Onboarding() {
       }
       addGoal(goal)
     }
+    // daily routine
+    setSetting('wakeTime', wakeT)
+    setSetting('breakfastTime', breakfastT)
+    setSetting('lunchTime', lunchT)
+    setSetting('dinnerTime', dinnerT)
+    setSetting('wakeAlarm', routineReminders)
+    setSetting('mealReminders', routineReminders)
+    syncRoutineReminders()
+    // birthdays
+    for (const b of draftBirthdays) addBirthday(b)
     nav('/')
   }
 
@@ -124,7 +168,7 @@ export function Onboarding() {
           >
             <Card className="p-7">
               <div className="text-[10px] uppercase tracking-[0.4em] text-muted mb-2">
-                step 1 of 5
+                step 1 of 6
               </div>
               <h2 className="font-display text-3xl tracking-wide mb-2">
                 Name your character.
@@ -181,7 +225,7 @@ export function Onboarding() {
             className="max-w-2xl w-full"
           >
             <div className="text-[10px] uppercase tracking-[0.4em] text-muted mb-2 text-center">
-              step 2 of 5
+              step 2 of 6
             </div>
             <h2 className="font-display text-3xl tracking-wide mb-2 text-center">
               Choose your starting class.
@@ -258,7 +302,7 @@ export function Onboarding() {
           >
             <Card className="p-7">
               <div className="text-[10px] uppercase tracking-[0.4em] text-muted mb-2">
-                step 3 of 5
+                step 3 of 6
               </div>
               <h2 className="font-display text-3xl tracking-wide mb-2">
                 Your first quest.
@@ -314,7 +358,7 @@ export function Onboarding() {
           >
             <Card className="p-7 text-center">
               <div className="text-[10px] uppercase tracking-[0.4em] text-muted mb-2">
-                step 4 of 5
+                step 4 of 6
               </div>
               <h2 className="font-display text-3xl tracking-wide mb-2">
                 Enable your assistant.
@@ -337,6 +381,112 @@ export function Onboarding() {
         {step === 5 && (
           <motion.div
             key="5"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            className="max-w-md w-full"
+          >
+            <Card className="p-7">
+              <div className="text-[10px] uppercase tracking-[0.4em] text-muted mb-2">step 5 of 6</div>
+              <h2 className="font-display text-3xl tracking-wide mb-1 flex items-center gap-2">
+                <Sunrise className="w-6 h-6 text-accent" strokeWidth={1.7} />
+                Your day & people.
+              </h2>
+              <p className="text-muted text-sm mb-5 leading-relaxed">
+                When do you usually wake and eat? And whose birthday should Ryse never let you forget?
+                (All optional — change it anytime in Settings.)
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {(
+                  [
+                    ['Wake', wakeT, setWakeT],
+                    ['Breakfast', breakfastT, setBreakfastT],
+                    ['Lunch', lunchT, setLunchT],
+                    ['Dinner', dinnerT, setDinnerT],
+                  ] as const
+                ).map(([label, value, set]) => (
+                  <div key={label}>
+                    <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">{label}</div>
+                    <input
+                      type="time"
+                      value={value}
+                      onChange={(e) => set(e.target.value)}
+                      className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50"
+                    />
+                  </div>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer mb-6 text-sm">
+                <input
+                  type="checkbox"
+                  checked={routineReminders}
+                  onChange={(e) => setRoutineReminders(e.target.checked)}
+                />
+                Remind me at these times
+              </label>
+
+              <div className="text-xs text-muted mb-2 flex items-center gap-1.5">
+                <Cake className="w-3.5 h-3.5 text-accent2" /> Birthdays
+              </div>
+              {draftBirthdays.length > 0 && (
+                <ul className="space-y-1.5 mb-2 max-h-32 overflow-y-auto">
+                  {draftBirthdays.map((b, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 text-sm rounded-lg border border-border bg-surface2/30 px-3 py-1.5"
+                    >
+                      <span className="min-w-0 flex-1 truncate">
+                        {b.name} <span className="text-muted">· {MONTHS[b.month - 1]} {b.day}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDraftBirthdays((bs) => bs.filter((_, j) => j !== i))}
+                        className="text-muted hover:text-red-400"
+                        aria-label="Remove"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex gap-2 mb-1">
+                <input
+                  value={bdName}
+                  onChange={(e) => setBdName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addDraftBirthday()
+                    }
+                  }}
+                  placeholder="Name"
+                  className="flex-1 min-w-0 bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50"
+                />
+                <input
+                  type="date"
+                  value={bdDate}
+                  onChange={(e) => setBdDate(e.target.value)}
+                  className="bg-surface2 border border-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-accent/50"
+                />
+                <Button type="button" size="sm" variant="ghost" disabled={!bdName.trim()} onClick={addDraftBirthday}>
+                  Add
+                </Button>
+              </div>
+              <div className="text-[10px] text-muted/60 mb-6">Year ignored. Add more anytime in Birthdays.</div>
+
+              <div className="flex justify-between">
+                <Button variant="ghost" onClick={prev}>Back</Button>
+                <Button onClick={next}>Next →</Button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {step === 6 && (
+          <motion.div
+            key="6"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
@@ -344,7 +494,7 @@ export function Onboarding() {
           >
             <Card className="p-8 shadow-glow">
               <div className="text-[10px] uppercase tracking-[0.4em] text-muted mb-2">
-                step 5 of 5
+                step 6 of 6
               </div>
               <Avatar
                 id={avatar}

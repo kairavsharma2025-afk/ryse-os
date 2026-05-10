@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bot, Moon, Smartphone } from 'lucide-react'
+import { Bot, Moon, Smartphone, Sunrise, Car } from 'lucide-react'
 import { useSettings } from '@/stores/settingsStore'
 import { useCharacter } from '@/stores/characterStore'
 import { Card } from '@/components/ui/Card'
@@ -10,6 +10,7 @@ import { Pill } from '@/components/ui/Pill'
 import { clearAll } from '@/stores/persist'
 import { ASSISTANT_MODEL } from '@/engine/claudeApi'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
+import { syncWakeReminder, syncMealReminders } from '@/engine/dailyRemindersSync'
 
 export function Settings() {
   const settings = useSettings()
@@ -318,29 +319,137 @@ export function Settings() {
       </Card>
 
       <Card className="p-5">
-        <h3 className="font-display text-lg mb-3">Times</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-2 mb-3">
+          <Sunrise className="w-5 h-5 text-accent" strokeWidth={1.8} />
+          <h3 className="font-display text-lg">Daily routine</h3>
+        </div>
+
+        <label className="flex items-start gap-2 cursor-pointer mb-3">
+          <input
+            type="checkbox"
+            checked={settings.wakeAlarm}
+            onChange={(e) => {
+              settings.set('wakeAlarm', e.target.checked)
+              syncWakeReminder()
+            }}
+            className="mt-1"
+          />
           <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">
-              Wake time
+            <div className="text-sm">Wake-up nudge</div>
+            <div className="text-xs text-muted leading-relaxed">
+              A daily notification at your wake time. (For a loud alarm, your phone&apos;s clock app
+              still wins.)
             </div>
+          </div>
+        </label>
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">Wake time</div>
             <input
               type="time"
               value={settings.wakeTime}
-              onChange={(e) => settings.set('wakeTime', e.target.value)}
-              className="bg-surface2 border border-border rounded px-3 py-2 text-sm"
+              onChange={(e) => {
+                settings.set('wakeTime', e.target.value)
+                syncWakeReminder()
+              }}
+              className="bg-surface2 border border-border rounded px-3 py-2 text-sm w-full"
             />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">
-              Wind down
-            </div>
+            <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">Wind down</div>
             <input
               type="time"
               value={settings.windDownTime}
               onChange={(e) => settings.set('windDownTime', e.target.value)}
-              className="bg-surface2 border border-border rounded px-3 py-2 text-sm"
+              className="bg-surface2 border border-border rounded px-3 py-2 text-sm w-full"
             />
+          </div>
+        </div>
+
+        <label className="flex items-start gap-2 cursor-pointer mb-3">
+          <input
+            type="checkbox"
+            checked={settings.mealReminders}
+            onChange={(e) => {
+              settings.set('mealReminders', e.target.checked)
+              syncMealReminders()
+            }}
+            className="mt-1"
+          />
+          <div>
+            <div className="text-sm">Meal reminders</div>
+            <div className="text-xs text-muted leading-relaxed">
+              Reminders at your usual breakfast, lunch &amp; dinner times — eating well is a Health quest.
+            </div>
+          </div>
+        </label>
+        <div className={`grid grid-cols-3 gap-3 ${settings.mealReminders ? '' : 'opacity-40 pointer-events-none'}`}>
+          {(
+            [
+              ['Breakfast', 'breakfastTime'],
+              ['Lunch', 'lunchTime'],
+              ['Dinner', 'dinnerTime'],
+            ] as const
+          ).map(([label, key]) => (
+            <div key={key}>
+              <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">{label}</div>
+              <input
+                type="time"
+                value={settings[key]}
+                onChange={(e) => {
+                  settings.set(key, e.target.value)
+                  syncMealReminders()
+                }}
+                className="bg-surface2 border border-border rounded px-3 py-2 text-sm w-full"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="text-[11px] text-muted/70 mt-3">
+          These show up on the Reminders page — snooze or tweak them there too.
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Car className="w-5 h-5 text-accent" strokeWidth={1.8} />
+          <h3 className="font-display text-lg">Ride nudges</h3>
+        </div>
+        <label className="flex items-start gap-2 cursor-pointer mb-4">
+          <input
+            type="checkbox"
+            checked={settings.rideNudges}
+            onChange={(e) => settings.set('rideNudges', e.target.checked)}
+            className="mt-1"
+          />
+          <div>
+            <div className="text-sm">Offer me a ride around office hours</div>
+            <div className="text-xs text-muted leading-relaxed">
+              A floating &quot;book an Uber?&quot; prompt near the start and end of your office block —
+              any <span className="text-text">Career</span> event whose title contains &quot;office&quot;,
+              &quot;work&quot; or &quot;commute&quot;. It never goes in the nav; it just shows up when
+              it&apos;s useful.
+            </div>
+          </div>
+        </label>
+        <div className={settings.rideNudges ? '' : 'opacity-40 pointer-events-none'}>
+          <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">
+            Nudge me this long before I leave the office
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[5, 10, 15, 20, 30, 45].map((m) => (
+              <button
+                key={m}
+                onClick={() => settings.set('officeLeaveLeadMin', m)}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition ${
+                  settings.officeLeaveLeadMin === m
+                    ? 'border-accent bg-accent/10 text-text'
+                    : 'border-border bg-surface2/40 text-muted hover:text-text'
+                }`}
+              >
+                {m} min
+              </button>
+            ))}
           </div>
         </div>
       </Card>

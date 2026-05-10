@@ -24,6 +24,13 @@ const DEFAULTS: Settings = {
   weeklyReviewDay: 0,
   anthropicApiKey: '',
   quietHours: undefined,
+  wakeAlarm: false,
+  mealReminders: false,
+  breakfastTime: '08:00',
+  lunchTime: '13:00',
+  dinnerTime: '20:00',
+  rideNudges: false,
+  officeLeaveLeadMin: 15,
 }
 
 interface SettingsState extends Settings {

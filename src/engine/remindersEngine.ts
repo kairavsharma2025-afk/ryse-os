@@ -1,7 +1,7 @@
 // Pure helpers for the reminders system: occurrence rules + fire times.
-// Handles once/daily/weekly/monthly recurrence, one-shot snoozes, and quiet hours.
+// Handles once/daily/weekly/monthly/yearly recurrence, one-shot snoozes, and quiet hours.
 
-import { parseISO, getDay, getDate, lastDayOfMonth, format, addDays } from 'date-fns'
+import { parseISO, getDay, getDate, getMonth, lastDayOfMonth, format, addDays } from 'date-fns'
 import type { Reminder } from '@/types'
 
 export interface QuietHours {
@@ -27,6 +27,13 @@ export function occursOn(r: Reminder, dateISO: string): boolean {
   if (r.repeat === 'monthly') {
     const d = parseISO(dateISO)
     const wantedDay = Math.min(getDate(parseISO(r.date)), getDate(lastDayOfMonth(d)))
+    return getDate(d) === wantedDay
+  }
+  if (r.repeat === 'yearly') {
+    const d = parseISO(dateISO)
+    const anchor = parseISO(r.date)
+    if (getMonth(d) !== getMonth(anchor)) return false
+    const wantedDay = Math.min(getDate(anchor), getDate(lastDayOfMonth(d))) // Feb 29 → Feb 28 in non-leap years
     return getDate(d) === wantedDay
   }
   return false

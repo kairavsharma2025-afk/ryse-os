@@ -12,6 +12,7 @@ import { Skills } from '@/pages/Skills'
 import { Settings } from '@/pages/Settings'
 import { Schedule } from '@/pages/Schedule'
 import { Reminders } from '@/pages/Reminders'
+import { Birthdays } from '@/pages/Birthdays'
 import { Privacy } from '@/pages/Privacy'
 import { SeasonPage } from '@/pages/SeasonPage'
 import { Finite } from '@/pages/modules/Finite'
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/loot" element={<Loot />} />
         <Route path="/skills" element={<Skills />} />
         <Route path="/season" element={<SeasonPage />} />
+        <Route path="/birthdays" element={<Birthdays />} />
         <Route path="/finite" element={<Finite />} />
         <Route path="/ritual" element={<Ritual />} />
         <Route path="/onedegree" element={<OneDegree />} />
