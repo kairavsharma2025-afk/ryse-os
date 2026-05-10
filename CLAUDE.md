@@ -84,9 +84,12 @@ Single-page React app, no backend, everything on device.
 - Boss battles inherit HP from `data/bossNames.ts` heuristics if user doesn't name them.
 - PWA: `public/manifest.webmanifest` + `public/sw.js` (minimal app-shell/runtime cache, bump `CACHE`
   in it to invalidate) + apple meta tags in `index.html`; `main.tsx` registers the SW in PROD only.
-  `public/icon.svg` is the (maskable) app icon. `hooks/useInstallPrompt` powers the "Install Ryse"
-  card in Settings (`beforeinstallprompt` on Chrome/Android; manual hint on iOS Safari).
-  Deployed on Vercel — `vercel.json` sets framework/build/output, an SPA rewrite, and `no-cache` on `/sw.js`.
+  Icons: `public/icon.svg` is the source; `scripts/gen-icons.mjs` (run via `npm run icons`, needs the
+  `sharp` devDep) rasterizes it to `public/apple-touch-icon*.png` (iOS), `pwa-{192,512}.png` +
+  `maskable-512x512.png` (manifest), `favicon-32x32.png` — re-run after editing `icon.svg`.
+  `hooks/useInstallPrompt` powers the "Install Ryse" card in Settings (`beforeinstallprompt` on
+  Chrome/Android; manual hint on iOS Safari). Deployed on Vercel — `vercel.json` sets framework/build/
+  output, an SPA rewrite, and `no-cache` on `/sw.js`.
 
 ## Run
 ```
