@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "icons": "node scripts/gen-icons.mjs",
+    "android-icons": "node scripts/gen-android-icons.mjs",
     "feature-graphic": "node scripts/gen-feature-graphic.mjs",
+    "store-overlays": "node scripts/gen-store-overlays.mjs",
     "cap:sync": "npm run build && npx cap sync",
     "android": "npm run cap:sync && npx cap open android",
     "ios": "npm run cap:sync && npx cap open ios"

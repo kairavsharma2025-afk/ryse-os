@@ -1,12 +1,14 @@
 # Ryse — App Store / Google Play listing copy (draft)
 
 Fill in the `TODO`s and paste these fields into the consoles. Assets already generated in the repo:
-icon (`public/icon.svg` → `public/icon-1024.png` + the PNG set), the Play **feature graphic**
-(`screenshots/play-feature-graphic.png`, 1024×500), and **screenshots** under `screenshots/{ios-6.7,
-ipad-13,android-phone}/` — regenerate with `npm run icons` / `npm run feature-graphic` / `node
-scripts/screenshots.mjs` (the last needs `npm i puppeteer --no-save` + the dev server running). Still
-to do by hand: pick the final app name, add caption overlays / device frames to the screenshots, and
-everything in the checklist at the bottom.
+- App icon: `public/icon.svg` → `public/icon-1024.png` + the PNG set (`npm run icons`); the iOS
+  `AppIcon.appiconset` and the Android `mipmap-*/ic_launcher*.png` are already populated too (the
+  latter via `npm run android-icons`).
+- Play **feature graphic**: `screenshots/play-feature-graphic.png` (1024×500) — `npm run feature-graphic`.
+- **Screenshots**: raw captures in `screenshots/{ios-6.7,ipad-13,android-phone}/` (`node scripts/screenshots.mjs`,
+  needs `npm i puppeteer --no-save` + the dev server running); **captioned, store-ready** versions in
+  `screenshots/store/<viewport>/` (`npm run store-overlays`) — upload these.
+Still to do by hand: pick the final app name, then everything in the checklist at the bottom.
 
 ---
 
@@ -139,7 +141,7 @@ You need ~3–8 screenshots per store (App Store wants 6.7" iPhone + 13" iPad si
 ## Quick checklist before you submit
 
 - [x] Privacy policy live at `https://ryse-os.vercel.app/privacy`; `CONTACT_EMAIL` set in `src/pages/Privacy.tsx` (swap it if you want a different inbox, then redeploy).
-- [x] Icon (1024) ✓, Play feature graphic ✓, iPhone 6.7" + iPad 12.9" + Play-phone screenshots ✓ (raw — add caption overlays before uploading).
+- [x] App icon ✓ (incl. iOS appiconset + Android launcher icons), Play feature graphic ✓, captioned iPhone 6.7" + iPad 12.9" + Play-phone screenshots ✓ in `screenshots/store/` — upload those.
 - [ ] Pick the final app name + subtitle.
 - [ ] Play: $25 developer account, build a signed `.aab` (`npm run android` → Android Studio; let Google manage app signing; keep your upload keystore safe — it's gitignored), fill the Data Safety form, upload screenshots + the feature graphic.
 - [ ] App Store: $99/yr Apple Developer, register the `app.ryse` bundle id, build the archive in Xcode on a Mac (`npm run ios`), upload screenshots, fill App Privacy as "Data Not Collected", add the review note about the optional AI key.

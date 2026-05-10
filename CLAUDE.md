@@ -97,9 +97,12 @@ Single-page React app, no backend, everything on device.
   Icons: `public/icon.svg` is the source; `scripts/gen-icons.mjs` (`npm run icons`, needs the `sharp`
   devDep) rasterizes it to `public/apple-touch-icon*.png` (iOS), `pwa-{192,512}.png` + `maskable-512x512.png`
   (manifest), `icon-1024.png` (App Store / Play master), `favicon-32x32.png` — re-run after editing `icon.svg`.
+  `scripts/gen-android-icons.mjs` (`npm run android-icons`) writes `android/.../mipmap-*/ic_launcher*.png`;
   `scripts/gen-feature-graphic.mjs` (`npm run feature-graphic`) → `screenshots/play-feature-graphic.png`
-  (1024×500). `scripts/screenshots.mjs` (`npm i puppeteer --no-save` first, dev server running) → store
-  screenshots under `screenshots/{ios-6.7,ipad-13,android-phone}/`. `hooks/useInstallPrompt` powers the
+  (1024×500). `scripts/screenshots.mjs` (`npm i puppeteer --no-save` first, dev server running) → raw store
+  screenshots under `screenshots/{ios-6.7,ipad-13,android-phone}/`; `scripts/gen-store-overlays.mjs`
+  (`npm run store-overlays`) adds captions/brand bg → `screenshots/store/<viewport>/` (upload those).
+  `hooks/useInstallPrompt` powers the
   "Install Ryse" card in Settings. Deployed on Vercel — `vercel.json` sets framework/build/output, an SPA
   rewrite, and `no-cache` on `/sw.js`; `public/.well-known/assetlinks.json` is a Digital Asset Links
   template for the Android-TWA route (placeholder SHA-256 fingerprint).
