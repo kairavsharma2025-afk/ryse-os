@@ -94,18 +94,24 @@ Single-page React app, no backend, everything on device.
 - Boss battles inherit HP from `data/bossNames.ts` heuristics if user doesn't name them.
 - PWA: `public/manifest.webmanifest` + `public/sw.js` (minimal app-shell/runtime cache, bump `CACHE`
   in it to invalidate) + apple meta tags in `index.html`; `main.tsx` registers the SW in PROD only.
-  Icons: `public/icon.svg` is the source; `scripts/gen-icons.mjs` (run via `npm run icons`, needs the
-  `sharp` devDep) rasterizes it to `public/apple-touch-icon*.png` (iOS), `pwa-{192,512}.png` +
-  `maskable-512x512.png` (manifest), `favicon-32x32.png` — re-run after editing `icon.svg`.
-  `hooks/useInstallPrompt` powers the "Install Ryse" card in Settings (`beforeinstallprompt` on
-  Chrome/Android; manual hint on iOS Safari). Deployed on Vercel — `vercel.json` sets framework/build/
-  output, an SPA rewrite, and `no-cache` on `/sw.js`.
+  Icons: `public/icon.svg` is the source; `scripts/gen-icons.mjs` (`npm run icons`, needs the `sharp`
+  devDep) rasterizes it to `public/apple-touch-icon*.png` (iOS), `pwa-{192,512}.png` + `maskable-512x512.png`
+  (manifest), `icon-1024.png` (App Store / Play master), `favicon-32x32.png` — re-run after editing `icon.svg`.
+  `scripts/gen-feature-graphic.mjs` (`npm run feature-graphic`) → `screenshots/play-feature-graphic.png`
+  (1024×500). `scripts/screenshots.mjs` (`npm i puppeteer --no-save` first, dev server running) → store
+  screenshots under `screenshots/{ios-6.7,ipad-13,android-phone}/`. `hooks/useInstallPrompt` powers the
+  "Install Ryse" card in Settings. Deployed on Vercel — `vercel.json` sets framework/build/output, an SPA
+  rewrite, and `no-cache` on `/sw.js`; `public/.well-known/assetlinks.json` is a Digital Asset Links
+  template for the Android-TWA route (placeholder SHA-256 fingerprint).
 - Native shells (for the app stores): Capacitor — `capacitor.config.ts` (`appId: app.ryse`, `webDir: dist`),
-  `android/` (Gradle, build in Android Studio) + `ios/` (Xcode + SPM, build on a Mac). The copied web
-  assets / build artifacts inside those folders are gitignored — regenerate with `npm run cap:sync`
-  (= `npm run build && npx cap sync`); `npm run android` / `npm run ios` also open the IDE. No `@capacitor/*`
-  imports in `src/` (web build is independent). `pages/Privacy` (route `/privacy`, reachable pre-onboarding
-  too) — store-required privacy policy; the contact email in it is a `TODO` placeholder.
+  `android/` (Gradle, build in Android Studio) + `ios/` (Xcode + SPM, build on a Mac). Copied web assets /
+  build artifacts inside those folders are gitignored — regenerate with `npm run cap:sync`; `npm run android`
+  / `npm run ios` also open the IDE. On native, `engine/nativeNotifications.ts` schedules reminders &
+  birthdays as OS local notifications (`@capacitor/local-notifications`) — `syncNativeNotifications()` runs
+  in `runOpeningTick` and re-runs on reminders/birthdays store changes; it's a no-op on the web (where
+  `useReminderEngine`'s 30s poll handles notifications — that path skips raising browser notifications when
+  `Capacitor.isNativePlatform()`). `pages/Privacy` (route `/privacy`, reachable pre-onboarding too) — the
+  store-required privacy policy; its `CONTACT_EMAIL` is the git-config address (swap as needed).
 
 ## Run
 ```

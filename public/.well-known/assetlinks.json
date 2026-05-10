@@ -1,0 +1,13 @@
+[
+  {
+    "_note": "Digital Asset Links for the Android TWA (e.g. a PWABuilder/Bubblewrap build). Get the SHA-256 fingerprint from Play Console → App integrity → App signing → SHA-256 certificate fingerprint, then replace the placeholder below. If your TWA's package name isn't 'app.ryse', update package_name too. Served at https://ryse-os.vercel.app/.well-known/assetlinks.json",
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.ryse",
+      "sha256_cert_fingerprints": [
+        "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
+      ]
+    }
+  }
+]

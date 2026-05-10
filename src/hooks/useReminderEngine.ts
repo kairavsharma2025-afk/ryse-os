@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { format, subDays } from 'date-fns'
+import { Capacitor } from '@capacitor/core'
 import { useReminders } from '@/stores/remindersStore'
 import { useSettings } from '@/stores/settingsStore'
 import { useNotifications } from '@/stores/notificationsStore'
@@ -11,6 +12,8 @@ import type { Notification as AppNotification } from '@/types'
 const TICK_MS = 30_000
 
 function browserNotification(): typeof window.Notification | undefined {
+  // On the native apps, OS notifications come from scheduled local notifications, not here.
+  if (Capacitor.isNativePlatform()) return undefined
   return typeof window !== 'undefined' ? window.Notification : undefined
 }
 

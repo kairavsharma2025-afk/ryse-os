@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { Card } from '@/components/ui/Card'
 
-// ⚠️ Replace this before submitting to the app stores — both Google Play and the
-// App Store require a working contact for your privacy policy.
-const CONTACT_EMAIL = 'your-email@example.com'
+// Privacy-policy contact. Both Google Play and the App Store require a working
+// address here — swap it for whatever inbox you want bots/users to reach.
+const CONTACT_EMAIL = 'kairavsharma.2025@associate.scmspune.ac.in'
 
 const LAST_UPDATED = 'May 10, 2026'
 

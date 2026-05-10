@@ -18,6 +18,7 @@ import { getAchievement } from '@/data/achievements'
 import { THEMES } from '@/data/themes'
 import { seedOnce, seedGoalsOnce } from '@/data/seed'
 import { syncRoutineReminders } from './dailyRemindersSync'
+import { syncNativeNotifications } from './nativeNotifications'
 import type { LootItem, ModuleId, Rarity, Achievement } from '@/types'
 import { AREA_IDS } from '@/types'
 import { nowISO, todayISO, daysBetween } from './dates'
@@ -68,6 +69,7 @@ export function runOpeningTick() {
   recomputeStats()
   evaluateAchievements()
   seedOnce()
+  void syncNativeNotifications()
 }
 
 // Build the AchievementContext once per check

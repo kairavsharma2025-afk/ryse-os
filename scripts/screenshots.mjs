@@ -319,7 +319,8 @@ const PAGES = [
   ['08-ritual', '/ritual'],
 ]
 const VIEWPORTS = [
-  { id: 'ios-6.7', width: 430, height: 932, deviceScaleFactor: 3 }, // → 1290 × 2796 (App Store iPhone)
+  { id: 'ios-6.7', width: 430, height: 932, deviceScaleFactor: 3 }, // → 1290 × 2796 (App Store iPhone 6.7")
+  { id: 'ipad-13', width: 1024, height: 1366, deviceScaleFactor: 2 }, // → 2048 × 2732 (App Store 12.9" iPad)
   { id: 'android-phone', width: 360, height: 640, deviceScaleFactor: 3 }, // → 1080 × 1920 (Play, within 2:1)
 ]
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))

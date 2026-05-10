@@ -1,7 +1,12 @@
 # Ryse — App Store / Google Play listing copy (draft)
 
-Fill in the `TODO`s, generate the images (icon ✓ done — see `public/icon.svg` / the PNGs;
-you still need screenshots + a Play "feature graphic"), and paste these fields into the consoles.
+Fill in the `TODO`s and paste these fields into the consoles. Assets already generated in the repo:
+icon (`public/icon.svg` → `public/icon-1024.png` + the PNG set), the Play **feature graphic**
+(`screenshots/play-feature-graphic.png`, 1024×500), and **screenshots** under `screenshots/{ios-6.7,
+ipad-13,android-phone}/` — regenerate with `npm run icons` / `npm run feature-graphic` / `node
+scripts/screenshots.mjs` (the last needs `npm i puppeteer --no-save` + the dev server running). Still
+to do by hand: pick the final app name, add caption overlays / device frames to the screenshots, and
+everything in the checklist at the bottom.
 
 ---
 
@@ -133,10 +138,10 @@ You need ~3–8 screenshots per store (App Store wants 6.7" iPhone + 13" iPad si
 
 ## Quick checklist before you submit
 
-- [ ] Replace `CONTACT_EMAIL` in `src/pages/Privacy.tsx`, rebuild & redeploy.
+- [x] Privacy policy live at `https://ryse-os.vercel.app/privacy`; `CONTACT_EMAIL` set in `src/pages/Privacy.tsx` (swap it if you want a different inbox, then redeploy).
+- [x] Icon (1024) ✓, Play feature graphic ✓, iPhone 6.7" + iPad 12.9" + Play-phone screenshots ✓ (raw — add caption overlays before uploading).
 - [ ] Pick the final app name + subtitle.
-- [ ] Generate screenshots (and Play's 1024×500 feature graphic).
-- [ ] Play: $25 developer account, sign the `.aab` (keep the keystore safe — it's gitignored), fill the Data Safety form.
-- [ ] App Store: $99/yr Apple Developer, build the archive in Xcode on a Mac, fill App Privacy as "Data Not Collected", add the review note about the optional AI key.
-- [ ] (Play TWA route only) host `public/.well-known/assetlinks.json` with your signing-key SHA-256.
+- [ ] Play: $25 developer account, build a signed `.aab` (`npm run android` → Android Studio; let Google manage app signing; keep your upload keystore safe — it's gitignored), fill the Data Safety form, upload screenshots + the feature graphic.
+- [ ] App Store: $99/yr Apple Developer, register the `app.ryse` bundle id, build the archive in Xcode on a Mac (`npm run ios`), upload screenshots, fill App Privacy as "Data Not Collected", add the review note about the optional AI key.
+- [ ] (Play TWA route only) put your app-signing-key SHA-256 into `public/.well-known/assetlinks.json` (it's a template now), redeploy.
 ```

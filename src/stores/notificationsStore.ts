@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { Capacitor } from '@capacitor/core'
 import type { Notification as AppNotification } from '@/types'
 import { loadJSON, saveJSON } from './persist'
 import { nowISO } from '@/engine/dates'
@@ -29,10 +30,12 @@ export const useNotifications = create<NotificationsState>((set, get) => ({
     }
     set({ list: [n, ...get().list].slice(0, 200) })
     persist(get())
-    // best-effort browser notification (no service worker required)
+    // best-effort browser notification (no service worker required).
+    // On the native apps, OS notifications come from scheduled local notifications instead.
     const browserNotif = (typeof window !== 'undefined' ? window.Notification : undefined)
     if (
       browserNotif &&
+      !Capacitor.isNativePlatform() &&
       browserNotif.permission === 'granted' &&
       document.visibilityState !== 'visible'
     ) {
