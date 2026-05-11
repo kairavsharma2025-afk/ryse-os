@@ -8,6 +8,7 @@ import { RitualTimeline } from '@/components/home/RitualTimeline'
 import { WeeklyRings } from '@/components/home/WeeklyRings'
 import { SeasonStrip } from '@/components/home/SeasonStrip'
 import { AiPlanCard } from '@/components/home/AiPlanCard'
+import { TodaySchedule } from '@/components/home/TodaySchedule'
 import { UpcomingReminders } from '@/components/home/UpcomingReminders'
 import { useCharacter } from '@/stores/characterStore'
 import { useGoals } from '@/stores/goalsStore'
@@ -34,6 +35,7 @@ export function Home() {
       <AiPlanCard />
       <CharacterHeader />
       <SeasonStrip />
+      <TodaySchedule />
       <UpcomingReminders />
 
       {goalCount === 0 ? (

@@ -48,7 +48,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Life',
     items: [
-      { to: '/birthdays', label: 'Birthdays' },
       { to: '/finite', label: 'Finite' },
       { to: '/values', label: 'Values' },
       { to: '/silence', label: 'Silence' },

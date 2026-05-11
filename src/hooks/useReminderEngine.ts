@@ -79,6 +79,7 @@ export function useReminderEngine() {
       }
 
       // --- birthdays --- (clamp Feb 29 → last day of the month in non-leap years)
+      if (!useSettings.getState().birthdayNotifications) return
       const m = now.getMonth() + 1
       const d = now.getDate()
       const tmr = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)

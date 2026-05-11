@@ -64,14 +64,16 @@ function buildSchedule(): ScheduledItem[] {
       every: r.snoozedUntil ? undefined : REPEAT_TO_EVERY[r.repeat],
     })
   }
-  for (const b of useBirthdays.getState().birthdays) {
-    out.push({
-      id: hashId(`b:${b.id}`),
-      title: `🎂 ${b.name}’s birthday`,
-      body: b.relation ? `Reach out — ${b.relation}.` : `Reach out to ${b.name}.`,
-      at: nextBirthdayDate(b, now),
-      every: 'year',
-    })
+  if (useSettings.getState().birthdayNotifications) {
+    for (const b of useBirthdays.getState().birthdays) {
+      out.push({
+        id: hashId(`b:${b.id}`),
+        title: `🎂 ${b.name}’s birthday`,
+        body: b.relation ? `Reach out — ${b.relation}.` : `Reach out to ${b.name}.`,
+        at: nextBirthdayDate(b, now),
+        every: 'year',
+      })
+    }
   }
   // iOS keeps at most 64 pending notifications.
   return out.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, 60)
@@ -132,4 +134,7 @@ export async function syncNativeNotifications(): Promise<void> {
 if (typeof window !== 'undefined') {
   useReminders.subscribe(() => void syncNativeNotifications())
   useBirthdays.subscribe(() => void syncNativeNotifications())
+  useSettings.subscribe((s, prev) => {
+    if (s.birthdayNotifications !== prev.birthdayNotifications) void syncNativeNotifications()
+  })
 }

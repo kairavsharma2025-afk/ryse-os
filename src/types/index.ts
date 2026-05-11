@@ -367,6 +367,8 @@ export interface Settings {
   // Ride nudges (side feature) — proactive "time to leave the office, book an Uber?" card.
   rideNudges: boolean
   officeLeaveLeadMin: number // minutes before the office block ends to nudge
+  // Birthdays — gates the day-of + day-before pings raised by useReminderEngine.
+  birthdayNotifications: boolean
 }
 
 // ===== Schedule =====

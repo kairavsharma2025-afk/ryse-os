@@ -31,6 +31,7 @@ const DEFAULTS: Settings = {
   dinnerTime: '20:00',
   rideNudges: false,
   officeLeaveLeadMin: 15,
+  birthdayNotifications: true,
 }
 
 interface SettingsState extends Settings {
