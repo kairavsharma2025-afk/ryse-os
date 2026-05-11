@@ -13,6 +13,8 @@ import { clearAll } from '@/stores/persist'
 import { ASSISTANT_MODEL } from '@/engine/claudeApi'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 import { syncWakeReminder, syncMealReminders } from '@/engine/dailyRemindersSync'
+import { AccountCard } from '@/components/account/AccountCard'
+import { wipeRemoteState } from '@/sync'
 
 const daysInMonth = (year: number, m1to12: number) => new Date(year, m1to12, 0).getDate()
 function nextBirthdayCountdown(b: { month: number; day: number }): {
@@ -58,8 +60,13 @@ export function Settings() {
     settings.set('notifications', r === 'granted' ? 'granted' : 'denied')
   }
 
-  const reset = () => {
+  const reset = async () => {
     if (!confirm('This will erase your character, goals, and all progress. Continue?')) return
+    try {
+      await wipeRemoteState() // no-op when signed out
+    } catch {
+      /* best-effort — proceed with the local wipe regardless */
+    }
     clearAll()
     location.reload()
   }
@@ -67,6 +74,8 @@ export function Settings() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl tracking-wide">Settings</h1>
+
+      <AccountCard />
 
       <Card variant={keySet ? 'glow' : 'default'} className="p-5">
         <div className="flex items-center gap-2 mb-3">
@@ -545,7 +554,7 @@ export function Settings() {
         <div className="text-xs text-muted mb-3">
           Erase your character and start over. This cannot be undone.
         </div>
-        <Button variant="danger" onClick={reset}>
+        <Button variant="danger" onClick={() => void reset()}>
           Reset everything
         </Button>
       </Card>

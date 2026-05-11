@@ -10,7 +10,11 @@ Single-page React app, no backend, everything on device.
 - Zustand (state) + custom localStorage persistence (under `lifeos:v1:` prefix)
 - Framer Motion (every animation)
 - date-fns (all date logic)
-- No backend. PWA-friendly but no SW yet.
+- **Local-first**, with an *optional* backend for cross-device sync: Vercel serverless
+  functions (`api/`) + Neon Postgres (Drizzle ORM, `db/`) + Clerk auth (`@clerk/clerk-react`).
+  Disabled unless `VITE_CLERK_PUBLISHABLE_KEY` (client) + `CLERK_SECRET_KEY` + `DATABASE_URL`
+  (server) are set — see `.env.example`. With it off the app behaves exactly as before.
+- PWA-friendly; minimal SW (`public/sw.js`).
 
 ## Map
 - `src/types` — every type lives here, single source of truth.
@@ -55,6 +59,23 @@ Single-page React app, no backend, everything on device.
 - `src/pages` — Onboarding (6 steps; step 5 = wake/meal times + birthdays), Home (Today), Schedule,
   Reminders, Birthdays, Goals + GoalDetail, Profile, Achievements, Loot, Skills, Settings, Privacy,
   SeasonPage, plus `pages/modules/*` for the seven modules.
+- `src/sync` — cross-device sync engine (only active when Clerk + the backend are configured).
+  State is mirrored as JSON blobs (one per `lifeos:v1:<storeKey>` localStorage entry) to Postgres,
+  last-write-wins per key on a timestamp. `engine.ts`: `noteLocalWrite` (called from `stores/persist`
+  on every `saveJSON` — stamps the key + queues a debounced push), `bootstrapSync(userId)` (pull all
+  remote blobs, keep newer side per key, push back anything stale/missing; wipes local first if a
+  *different* account signs in on this device — see `meta.ts` owner tracking), `wipeRemoteState`
+  (Settings → Reset). `client.ts`: thin `/api/state` fetch wrappers + the Clerk token getter.
+  `SyncProvider.tsx`: wires Clerk auth → engine, reloads once after a mid-session sign-in that
+  changed local data. `syncStore.ts`: zustand status (`enabled/phase/lastSyncedAt/error`) for UI.
+  `main.tsx` does a headless `clerk.load()` + `bootstrapSync` *before* React mounts so stores
+  hydrate from synced data with no flash (flagged via `window.__ryseBootstrappedUserId`).
+- `api/` — Vercel serverless functions. `api/state.ts` (`GET`/`PUT`/`DELETE` the signed-in user's
+  store blobs — one row per `(user_id, store_key)`), `api/health.ts` (env-wiring diagnostics),
+  `api/_lib/auth.ts` (verifies the Clerk session JWT from `Authorization: Bearer …` → `userId`).
+- `db/` — `schema.ts` (`user_state` table), `client.ts` (Neon + Drizzle), `migrations/0000_init.sql`
+  (also `npm run db:push` via `drizzle.config.ts`). `DATABASE_URL`/`POSTGRES_URL` is auto-set by the
+  Neon Vercel Marketplace integration; set it in `.env.local` for local dev.
 
 ## AI assistant
 - Disabled until the user pastes an Anthropic API key in Settings (`settings.anthropicApiKey`,
@@ -104,8 +125,10 @@ Single-page React app, no backend, everything on device.
   (`npm run store-overlays`) adds captions/brand bg → `screenshots/store/<viewport>/` (upload those).
   `hooks/useInstallPrompt` powers the
   "Install Ryse" card in Settings. Deployed on Vercel — `vercel.json` sets framework/build/output, an SPA
-  rewrite, and `no-cache` on `/sw.js`; `public/.well-known/assetlinks.json` is a Digital Asset Links
-  template for the Android-TWA route (placeholder SHA-256 fingerprint).
+  rewrite that **excludes `/api`** (so serverless functions resolve), CORS headers on `/api/*` (for the
+  Capacitor native shells, which call the deployed origin cross-origin — set `VITE_API_BASE_URL` in
+  native builds), `no-cache` on `/sw.js`; the SW also bypasses `/api/*`. `public/.well-known/assetlinks.json`
+  is a Digital Asset Links template for the Android-TWA route (placeholder SHA-256 fingerprint).
 - Native shells (for the app stores): Capacitor — `capacitor.config.ts` (`appId: app.ryse`, `webDir: dist`),
   `android/` (Gradle, build in Android Studio) + `ios/` (Xcode + SPM, build on a Mac). Copied web assets /
   build artifacts inside those folders are gitignored — regenerate with `npm run cap:sync`; `npm run android`

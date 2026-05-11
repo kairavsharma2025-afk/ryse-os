@@ -24,6 +24,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   // Leave cross-origin traffic alone (Anthropic API, font/emoji CDNs, etc.)
   if (url.origin !== self.location.origin) return
+  // Never cache the backend API (sync, auth) — always go to the network.
+  if (url.pathname.startsWith('/api/')) return
 
   // SPA navigations: try the network, fall back to the cached shell when offline.
   if (request.mode === 'navigate') {
