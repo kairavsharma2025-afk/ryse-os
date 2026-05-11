@@ -25,3 +25,5 @@ ios/DerivedData
 keystore.properties
 android/keystore.properties
 android/key.properties
+
+.env*.local

@@ -1,5 +1,10 @@
-import 'dotenv/config'
+import { config as loadEnv } from 'dotenv'
 import { defineConfig } from 'drizzle-kit'
+
+// `.env.local` (where `vercel env pull` writes secrets, gitignored) takes precedence
+// over a committed `.env`; dotenv doesn't override already-set vars, so load it first.
+loadEnv({ path: '.env.local' })
+loadEnv()
 
 const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL
 
