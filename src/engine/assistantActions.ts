@@ -167,6 +167,8 @@ export async function askAssistant(userText: string): Promise<void> {
   }
 }
 
+const PLAN_FORMAT = `Output ONLY a time-blocked schedule as a markdown bullet list — one line per block, formatted like:\n- **8:00 AM** — Wake ritual (10 min)\n- **9:00 AM** — Deep work: <highest-priority goal> (90 min)\nHard-anchor every event already on today's schedule and every reminder at its exact time (do not move them). Around those, slot deep-work blocks for the Hero's top-priority goals, the daily-ritual steps not yet done, meals, and short recovery breaks. Be realistic about the time of day shown in "Now:" — don't schedule things in the past. Keep it to 6–12 lines. After the list, add ONE blank line, then ONE short bold motivating line starting with "**Your mission today:**". Do NOT include any action block.`
+
 /** Generate (or regenerate) today's AI plan into the assistant store. */
 export async function generateDailyPlan(opts?: { force?: boolean }): Promise<void> {
   const store = useAssistant.getState()
@@ -179,12 +181,47 @@ export async function generateDailyPlan(opts?: { force?: boolean }): Promise<voi
   store.setError(undefined)
   store.setPlanLoading(true)
   try {
-    const system =
-      `${PERSONA}\n\nTASK: Build the Hero's plan for TODAY. Output ONLY a time-blocked schedule as a markdown bullet list — one line per block, formatted like:\n- **8:00 AM** — Wake ritual (10 min)\n- **9:00 AM** — Deep work: <highest-priority goal> (90 min)\nHard-anchor every event already on today's schedule and every reminder at its exact time (do not move them). Around those, slot deep-work blocks for the Hero's top-priority goals, the daily-ritual steps not yet done, meals, and short recovery breaks. Be realistic about the time of day shown in "Now:" — don't schedule things in the past. Keep it to 6–12 lines. After the list, add ONE blank line, then ONE short bold motivating line starting with "**Your mission today:**". Do NOT include any action block.\n\n` +
-      buildAssistantContext()
+    const system = `${PERSONA}\n\nTASK: Build the Hero's plan for TODAY. ${PLAN_FORMAT}\n\n${buildAssistantContext()}`
     const content = await callClaude({
       system,
       messages: [{ role: 'user', content: 'Generate my plan for today.' }],
+      maxTokens: 900,
+    })
+    useAssistant.getState().setPlan({ date: today, content, generatedAt: nowISO() })
+  } catch (e) {
+    useAssistant.getState().setError((e as Error).message)
+  } finally {
+    useAssistant.getState().setPlanLoading(false)
+  }
+}
+
+/**
+ * Tweak today's existing plan in-place. Sends the current plan + the Hero's instruction
+ * (e.g. "move the workout to 7pm", "add a 30 min lunch break") and replaces the plan
+ * with the revised version. Falls back to a fresh generate if no plan exists yet.
+ */
+export async function adjustDailyPlan(instruction: string): Promise<void> {
+  const text = instruction.trim()
+  if (!text) return
+  const store = useAssistant.getState()
+  const today = todayISO()
+  const current = store.plan && store.plan.date === today ? store.plan : undefined
+  if (!current) {
+    await generateDailyPlan({ force: true })
+    return
+  }
+  if (!hasApiKey()) {
+    store.setError('No Anthropic API key — add one in Settings to tweak plans.')
+    return
+  }
+  store.setError(undefined)
+  store.setPlanLoading(true)
+  try {
+    const system = `${PERSONA}\n\nTASK: REVISE the Hero's existing plan for TODAY based on their instruction below. Keep what still works; change only what they asked. ${PLAN_FORMAT}\n\n${buildAssistantContext()}`
+    const userPrompt = `Here is my current plan:\n\n${current.content}\n\nMy change: ${text}\n\nReturn the revised plan in the same format.`
+    const content = await callClaude({
+      system,
+      messages: [{ role: 'user', content: userPrompt }],
       maxTokens: 900,
     })
     useAssistant.getState().setPlan({ date: today, content, generatedAt: nowISO() })

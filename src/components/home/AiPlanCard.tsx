@@ -1,14 +1,20 @@
-import { useEffect } from 'react'
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, RefreshCw, Loader, Bot } from 'lucide-react'
+import { Sparkles, RefreshCw, Loader, Bot, Wand2, SendHorizonal } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { RichText } from '@/components/assistant/RichText'
 import { useAssistant } from '@/stores/assistantStore'
 import { useSettings } from '@/stores/settingsStore'
-import { generateDailyPlan } from '@/engine/assistantActions'
+import { generateDailyPlan, adjustDailyPlan } from '@/engine/assistantActions'
 import { todayISO } from '@/engine/dates'
+
+const TWEAK_SUGGESTIONS = [
+  'Move my workout to evening',
+  'Add a 30-min lunch break',
+  'Free up the afternoon for deep work',
+]
 
 export function AiPlanCard() {
   const plan = useAssistant((s) => s.plan)
@@ -17,9 +23,24 @@ export function AiPlanCard() {
   const openPanel = useAssistant((s) => s.setPanelOpen)
   const hasKey = useSettings((s) => !!s.anthropicApiKey?.trim())
   const nav = useNavigate()
+  const [tweak, setTweak] = useState('')
 
   const today = todayISO()
   const planForToday = plan && plan.date === today ? plan : undefined
+
+  const submitTweak = (e?: FormEvent) => {
+    e?.preventDefault()
+    const text = tweak.trim()
+    if (!text || loading) return
+    setTweak('')
+    void adjustDailyPlan(text)
+  }
+  const onTweakKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      submitTweak()
+    }
+  }
 
   // When an API key is present and we don't yet have today's plan, auto-generate it
   // shortly after mount (so the page paints first). generateDailyPlan() handles errors
@@ -53,12 +74,6 @@ export function AiPlanCard() {
             </div>
           </div>
         </div>
-        {hasKey && planForToday && !loading && (
-          <Button size="sm" variant="ghost" onClick={retry}>
-            <RefreshCw className="w-3.5 h-3.5" />
-            Regenerate plan
-          </Button>
-        )}
       </div>
 
       {!hasKey ? (
@@ -70,9 +85,16 @@ export function AiPlanCard() {
           and it&apos;ll draft your day, build reminders, and plan your season.
         </div>
       ) : loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted py-4">
-          <Loader className="w-4 h-4 animate-spin text-accent" />
-          Drafting your battle plan…
+        <div className="space-y-3">
+          {planForToday && (
+            <div className="text-sm text-muted opacity-50">
+              <RichText text={planForToday.content} />
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-sm text-muted py-2">
+            <Loader className="w-4 h-4 animate-spin text-accent" />
+            {planForToday ? 'Reworking your plan…' : 'Drafting your battle plan…'}
+          </div>
         </div>
       ) : planForToday ? (
         <>
@@ -87,6 +109,50 @@ export function AiPlanCard() {
               </Button>
             </div>
           )}
+
+          <form
+            onSubmit={submitTweak}
+            className="mt-4 rounded-xl border border-border bg-surface2/40 p-3 space-y-2"
+          >
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-muted">
+              <Wand2 className="w-3 h-3 text-accent" />
+              Tweak this plan
+            </div>
+            <div className="flex items-end gap-2">
+              <textarea
+                value={tweak}
+                onChange={(e) => setTweak(e.target.value)}
+                onKeyDown={onTweakKey}
+                placeholder="Tell the GM what to change — e.g. move my workout to evening, free up the afternoon…"
+                rows={2}
+                className="flex-1 resize-none bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50 placeholder:text-muted/60"
+              />
+              <Button type="submit" size="sm" disabled={!tweak.trim()}>
+                <SendHorizonal className="w-3.5 h-3.5" />
+                Apply
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {TWEAK_SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setTweak(s)}
+                  className="text-[10px] px-2 py-0.5 rounded-full border border-border text-muted hover:text-accent hover:border-accent/40 transition"
+                >
+                  {s}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={retry}
+                className="ml-auto text-[10px] uppercase tracking-wider text-muted hover:text-accent inline-flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Regenerate
+              </button>
+            </div>
+          </form>
         </>
       ) : error ? (
         <div className="space-y-3">
