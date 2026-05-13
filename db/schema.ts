@@ -1,4 +1,4 @@
-import { pgTable, text, jsonb, integer, timestamp, primaryKey } from 'drizzle-orm/pg-core'
+import { pgTable, text, jsonb, integer, timestamp, primaryKey, index } from 'drizzle-orm/pg-core'
 
 /**
  * One row per (Clerk user, localStorage store key).
@@ -28,3 +28,27 @@ export const userState = pgTable(
 )
 
 export type UserStateRow = typeof userState.$inferSelect
+
+/**
+ * Short-lived device-pairing codes. Device A POSTs to /api/pair to create a new
+ * (code, user_id) pair; device B POSTs to /api/pair with the code to receive the
+ * user_id and stop using its own. The row is single-use (deleted on redeem) and
+ * also expires after a few minutes if unredeemed.
+ *
+ * No password or session token — the user_id itself (a v4 UUID with 122 bits of
+ * entropy) is the credential. Whoever has it on a device can sync that account.
+ */
+export const syncPairing = pgTable(
+  'sync_pairing',
+  {
+    code: text('code').primaryKey(),
+    userId: text('user_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    byExpiry: index('sync_pairing_expires_idx').on(t.expiresAt),
+  })
+)
+
+export type SyncPairingRow = typeof syncPairing.$inferSelect

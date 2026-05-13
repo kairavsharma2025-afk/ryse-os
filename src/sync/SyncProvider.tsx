@@ -1,59 +1,67 @@
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
-import { useAuth, useUser } from '@clerk/clerk-react'
-import { setTokenGetter } from './client'
 import { bootstrapSync } from './engine'
+import { getSyncUserId } from './client'
 import { useSync } from './syncStore'
 
+const shortLabel = (id: string): string => `device · ${id.slice(0, 4)}…${id.slice(-4)}`
+
 /**
- * Bridges Clerk auth state into the sync engine:
- *   • registers a token getter so background pushes can authenticate;
- *   • runs `bootstrapSync` when the user signs in mid-session (the initial
- *     page-load case is handled in main.tsx before render, and flagged via
- *     `window.__ryseBootstrappedUserId` so we don't do it twice);
- *   • after a mid-session bootstrap that changed local data, reloads once so the
- *     in-memory Zustand stores pick up the merged state.
+ * Watches the paired sync user id in localStorage and runs the sync engine
+ * when it changes:
  *
- * Renders its children unchanged — sync never gates the UI.
+ *   • on mount, if a user id is stored, bootstrap (pull remote, push stale local)
+ *     unless main.tsx already did it before render (flagged via the global below);
+ *   • when the id changes mid-session (e.g. the user pairs/disconnects), bootstrap
+ *     again and reload once if local data was wiped/changed.
+ *
+ * Listens to `storage` events too so a "Disconnect" tap on one tab is picked up
+ * by other tabs in the same browser.
  */
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn, userId, getToken } = useAuth()
-  const { user } = useUser()
   const bootstrappedFor = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!isLoaded) return
+    function reconcile() {
+      const userId = getSyncUserId()
+      if (userId) {
+        useSync.getState().setEnabled(true, shortLabel(userId))
 
-    if (isSignedIn && userId) {
-      setTokenGetter(() => getToken())
-      const label =
-        user?.primaryEmailAddress?.emailAddress ??
-        user?.emailAddresses?.[0]?.emailAddress ??
-        user?.username ??
-        null
-      useSync.getState().setEnabled(true, label)
+        const preBootstrapped =
+          (window as unknown as { __ryseBootstrappedUserId?: string }).__ryseBootstrappedUserId ===
+          userId
 
-      const preBootstrapped = (window as unknown as { __ryseBootstrappedUserId?: string }).__ryseBootstrappedUserId === userId
-
-      if (bootstrappedFor.current !== userId) {
-        bootstrappedFor.current = userId
-        if (!preBootstrapped) {
-          void bootstrapSync(userId).then((res) => {
-            if (res.ok && (res.changedKeys.length > 0 || res.wipedLocal)) {
-              window.location.reload()
-            }
-          })
+        if (bootstrappedFor.current !== userId) {
+          bootstrappedFor.current = userId
+          if (!preBootstrapped) {
+            void bootstrapSync(userId).then((res) => {
+              if (res.ok && (res.changedKeys.length > 0 || res.wipedLocal)) {
+                window.location.reload()
+              }
+            })
+          }
         }
+      } else {
+        useSync.getState().setEnabled(false, null)
+        bootstrappedFor.current = null
       }
-    } else {
-      // Signed out: stop syncing but keep local data on the device. We deliberately
-      // keep the recorded owner so that if a *different* account signs in next,
-      // bootstrapSync detects the mismatch and wipes this account's data first.
-      setTokenGetter(null)
-      useSync.getState().setEnabled(false, null)
-      bootstrappedFor.current = null
     }
-  }, [isLoaded, isSignedIn, userId, getToken, user])
+
+    reconcile()
+
+    // Cross-tab + same-tab updates: 'storage' for other tabs, the custom event for
+    // this tab (window.dispatchEvent on every setSyncUserId call).
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'lifeos:v1:__sync_user_id') reconcile()
+    }
+    const onPaired = () => reconcile()
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('ryse:sync-identity-changed', onPaired)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('ryse:sync-identity-changed', onPaired)
+    }
+  }, [])
 
   return <>{children}</>
 }

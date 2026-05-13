@@ -1,12 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { ClerkProvider } from '@clerk/clerk-react'
 import App from './App'
-import { SyncProvider, setTokenGetter, bootstrapSync } from './sync'
+import { SyncProvider, bootstrapSync, getSyncUserId } from './sync'
 import './index.css'
-
-const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim()
 
 declare global {
   interface Window {
@@ -16,49 +13,31 @@ declare global {
 }
 
 /**
- * Before React mounts, if there's an active Clerk session, pull the user's state
- * from the server into localStorage so the Zustand stores hydrate from it (no flash,
- * no reload). Returns the loaded Clerk instance so <ClerkProvider> can reuse it.
+ * Before React mounts, if this device is paired (a sync user id is stored
+ * locally), pull the user's state from the server into localStorage so the
+ * Zustand stores hydrate from it — no flash, no reload.
  */
-async function preBootstrap() {
-  if (!CLERK_KEY) return undefined
+async function preBootstrap(): Promise<void> {
+  const userId = getSyncUserId()
+  if (!userId) return
+  window.__ryseBootstrappedUserId = userId
   try {
-    const { Clerk } = await import('@clerk/clerk-js')
-    const clerk = new Clerk(CLERK_KEY)
-    await clerk.load()
-    const session = clerk.session
-    const userId = session?.user?.id
-    if (session && userId) {
-      setTokenGetter(() => session.getToken())
-      window.__ryseBootstrappedUserId = userId
-      try {
-        await bootstrapSync(userId)
-      } catch {
-        /* offline → fall back to local data */
-      }
-    }
-    return clerk
+    await bootstrapSync(userId)
   } catch {
-    return undefined
+    /* offline → fall back to local data */
   }
 }
 
 async function main() {
-  const clerk = await preBootstrap()
-
-  const app = <App />
-  const withSync = CLERK_KEY ? <SyncProvider>{app}</SyncProvider> : app
-  const tree = <BrowserRouter>{withSync}</BrowserRouter>
+  await preBootstrap()
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      {CLERK_KEY ? (
-        <ClerkProvider publishableKey={CLERK_KEY} Clerk={clerk}>
-          {tree}
-        </ClerkProvider>
-      ) : (
-        tree
-      )}
+      <BrowserRouter>
+        <SyncProvider>
+          <App />
+        </SyncProvider>
+      </BrowserRouter>
     </StrictMode>
   )
 

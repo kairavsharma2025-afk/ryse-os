@@ -3,13 +3,13 @@ import { create } from 'zustand'
 export type SyncPhase = 'disabled' | 'idle' | 'syncing' | 'error'
 
 interface SyncState {
-  /** True when a Clerk session is active and sync is operating. */
+  /** True when this device is paired (a user id is stored locally). */
   enabled: boolean
   phase: SyncPhase
   /** ms epoch of the last successful push/pull, or null. */
   lastSyncedAt: number | null
   error: string | null
-  /** Display name for the signed-in account (email / username). */
+  /** Short suffix of the paired user id, shown in the UI. */
   userLabel: string | null
 
   setEnabled(v: boolean, userLabel?: string | null): void
