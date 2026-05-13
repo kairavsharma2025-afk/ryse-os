@@ -152,9 +152,9 @@ export function Layout() {
   }, [settings.reduceMotion])
 
   return (
-    <div className="ryse-shell min-h-full flex">
+    <div className="ryse-shell min-h-full flex md:h-screen md:overflow-hidden">
       {/* Sidebar */}
-      <aside className="hidden md:flex md:flex-col w-56 lg:w-60 shrink-0 border-r border-border bg-surface/30 backdrop-blur sticky top-0 h-screen">
+      <aside className="hidden md:flex md:flex-col w-56 lg:w-60 shrink-0 border-r border-border bg-surface/30 backdrop-blur md:h-full">
         <div className="px-5 pt-6 pb-5 flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center shadow-glow">
             <span className="font-display font-extrabold text-bg text-lg">R</span>
@@ -246,7 +246,7 @@ export function Layout() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 min-w-0 flex flex-col">
+      <main className="flex-1 min-w-0 flex flex-col md:h-full md:overflow-y-auto">
         <div className="md:hidden sticky top-0 z-40 bg-surface/80 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent2 flex items-center justify-center">

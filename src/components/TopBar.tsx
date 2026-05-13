@@ -35,7 +35,7 @@ export function TopBar() {
   const dateLabel = format(new Date(), 'd MMM').toUpperCase()
 
   return (
-    <div className="hidden md:flex items-center gap-4 px-8 pt-6 pb-2">
+    <div className="hidden md:flex items-center gap-4 px-8 pt-6 pb-3 sticky top-0 z-20 bg-surface/40 backdrop-blur-md border-b border-border/30">
       {/* breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted">
         <button
