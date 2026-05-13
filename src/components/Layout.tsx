@@ -14,6 +14,7 @@ import { AssistantPanel } from '@/components/assistant/AssistantPanel'
 import { AssistantFab } from '@/components/assistant/AssistantFab'
 import { SmartNudge } from '@/components/assistant/SmartNudge'
 import { Avatar } from '@/components/character/Avatar'
+import { RyseLogo } from '@/components/RyseLogo'
 import { TopBar } from '@/components/TopBar'
 import { NAV_ICONS, type LucideIcon } from '@/components/icons'
 import { Bot, Settings as SettingsIcon } from 'lucide-react'
@@ -156,8 +157,8 @@ export function Layout() {
       {/* Sidebar */}
       <aside className="hidden md:flex md:flex-col w-56 lg:w-60 shrink-0 border-r border-border bg-surface/30 backdrop-blur md:h-full">
         <div className="px-5 pt-6 pb-5 flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center shadow-glow">
-            <span className="font-display font-extrabold text-bg text-lg">R</span>
+          <div className="w-10 h-10 rounded-xl bg-surface2/50 border border-border/50 flex items-center justify-center text-accent shadow-glow">
+            <RyseLogo className="w-7 h-7" />
           </div>
           <div className="font-display font-bold text-xl tracking-tight text-text">Ryse</div>
         </div>
@@ -249,8 +250,8 @@ export function Layout() {
       <main className="flex-1 min-w-0 flex flex-col md:h-full md:overflow-y-auto">
         <div className="md:hidden sticky top-0 z-40 bg-surface/80 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent2 flex items-center justify-center">
-              <span className="font-display font-extrabold text-bg text-sm">R</span>
+            <div className="w-8 h-8 rounded-lg bg-surface2/50 border border-border/50 flex items-center justify-center text-accent">
+              <RyseLogo className="w-5 h-5" />
             </div>
             <div className="font-display font-bold tracking-tight">Ryse</div>
           </div>
