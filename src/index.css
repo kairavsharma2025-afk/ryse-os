@@ -298,6 +298,14 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Desktop: only the sidebar nav and the main content area scroll; the body
+   itself is locked so we never get a third "page" scrollbar over the shell. */
+@media (min-width: 768px) {
+  html, body, #root {
+    overflow: hidden;
+  }
+}
+
 /* Subtle global noise/grain for premium feel */
 body::before {
   content: '';
