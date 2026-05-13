@@ -27,6 +27,7 @@ const PUSH_DEBOUNCE_MS = 1500
 const dirty = new Set<string>()
 let pushTimer: ReturnType<typeof setTimeout> | null = null
 let inFlight = false
+let bootstrapPromise: Promise<BootstrapResult> | null = null
 
 function ts(value: string | null | undefined): number {
   if (!value) return 0
@@ -94,65 +95,73 @@ export interface BootstrapResult {
 /**
  * Reconcile this device with the server for `userId`. Safe to call before the app
  * renders (main.tsx) — in that case stores pick up the merged localStorage on import.
+ *
+ * Concurrent callers share the same in-flight promise, so awaiting from multiple
+ * places (e.g. the pairing UI + SyncProvider mounting at the same time) all see
+ * the same merged result.
  */
-export async function bootstrapSync(userId: string): Promise<BootstrapResult> {
-  if (!syncEnabled()) return { changedKeys: [], wipedLocal: false, ok: false }
-  if (inFlight) return { changedKeys: [], wipedLocal: false, ok: false }
-  inFlight = true
-  useSync.getState().setPhase('syncing')
+export function bootstrapSync(userId: string): Promise<BootstrapResult> {
+  if (bootstrapPromise) return bootstrapPromise
+  bootstrapPromise = (async () => {
+    if (!syncEnabled()) return { changedKeys: [], wipedLocal: false, ok: false }
+    inFlight = true
+    useSync.getState().setPhase('syncing')
 
-  const changedKeys: string[] = []
-  let wipedLocal = false
+    const changedKeys: string[] = []
+    let wipedLocal = false
 
-  try {
-    const remote = await apiGetState()
-    const remoteHasData = Object.keys(remote).length > 0
-    const prevOwner = getOwner()
+    try {
+      const remote = await apiGetState()
+      const remoteHasData = Object.keys(remote).length > 0
+      const prevOwner = getOwner()
 
-    // The account wins over local data when either: a *different* account is taking
-    // over this device, or this device is joining an account that already has data
-    // (e.g. you went through onboarding locally, then signed into an existing account).
-    if (prevOwner ? prevOwner !== userId : remoteHasData) {
-      wipeLocalStores()
-      wipedLocal = true
-    }
-
-    const meta = wipedLocal ? {} : readMeta()
-    const allKeys = new Set<string>([...listLocalStoreKeys(), ...Object.keys(remote)])
-    const toPush: Array<{ storeKey: string; data: unknown }> = []
-
-    for (const key of allKeys) {
-      if (key.startsWith('__sync')) continue
-      const r = remote[key]
-      const localTs = meta[key] ?? null
-      const localData = readLocalBlob(key)
-      const hasLocal = localData !== undefined
-
-      const remoteWins = r && (!hasLocal || ts(r.updatedAt) > ts(localTs))
-      if (remoteWins) {
-        writeLocalBlob(key, r.data)
-        setKeyTimestamp(key, r.updatedAt)
-        changedKeys.push(key)
-      } else if (hasLocal) {
-        // local is newer, or the server doesn't have it yet → push it up
-        toPush.push({ storeKey: key, data: localData })
+      // The account wins over local data when either: a *different* account is taking
+      // over this device, or this device is joining an account that already has data
+      // (e.g. you went through onboarding locally, then signed into an existing account).
+      if (prevOwner ? prevOwner !== userId : remoteHasData) {
+        wipeLocalStores()
+        wipedLocal = true
       }
-    }
 
-    if (toPush.length > 0) {
-      const result = await apiPutState(toPush)
-      for (const [k, v] of Object.entries(result)) setKeyTimestamp(k, v.updatedAt)
-    }
+      const meta = wipedLocal ? {} : readMeta()
+      const allKeys = new Set<string>([...listLocalStoreKeys(), ...Object.keys(remote)])
+      const toPush: Array<{ storeKey: string; data: unknown }> = []
 
-    setOwner(userId)
-    useSync.getState().markSynced()
-    return { changedKeys, wipedLocal, ok: true }
-  } catch (err) {
-    useSync.getState().setError(errMessage(err))
-    return { changedKeys, wipedLocal, ok: false }
-  } finally {
-    inFlight = false
-  }
+      for (const key of allKeys) {
+        if (key.startsWith('__sync')) continue
+        const r = remote[key]
+        const localTs = meta[key] ?? null
+        const localData = readLocalBlob(key)
+        const hasLocal = localData !== undefined
+
+        const remoteWins = r && (!hasLocal || ts(r.updatedAt) > ts(localTs))
+        if (remoteWins) {
+          writeLocalBlob(key, r.data)
+          setKeyTimestamp(key, r.updatedAt)
+          changedKeys.push(key)
+        } else if (hasLocal) {
+          // local is newer, or the server doesn't have it yet → push it up
+          toPush.push({ storeKey: key, data: localData })
+        }
+      }
+
+      if (toPush.length > 0) {
+        const result = await apiPutState(toPush)
+        for (const [k, v] of Object.entries(result)) setKeyTimestamp(k, v.updatedAt)
+      }
+
+      setOwner(userId)
+      useSync.getState().markSynced()
+      return { changedKeys, wipedLocal, ok: true }
+    } catch (err) {
+      useSync.getState().setError(errMessage(err))
+      return { changedKeys, wipedLocal, ok: false }
+    } finally {
+      inFlight = false
+      bootstrapPromise = null
+    }
+  })()
+  return bootstrapPromise
 }
 
 /** Force-flush any pending changes immediately (e.g. before a manual reset). */

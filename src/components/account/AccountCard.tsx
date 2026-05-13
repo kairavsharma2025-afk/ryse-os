@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import {
   apiCreatePairing,
   apiRedeemPairing,
+  bootstrapSync,
   getSyncUserId,
   setSyncUserId,
   useSync,
@@ -89,6 +90,13 @@ export function AccountCard() {
     setError(null)
     try {
       const p = await apiCreatePairing()
+      // Register THIS device as paired immediately so the sync engine pushes
+      // every existing local store (character/XP/level, goals, modules, …) up
+      // to the server. Then wait for that push to land — otherwise the other
+      // device can redeem the code and pull an empty account.
+      const firstTimePairing = !getSyncUserId()
+      if (firstTimePairing) setSyncUserId(p.userId)
+      await bootstrapSync(p.userId)
       setPairing(p)
       setMode('create')
     } catch (e) {
