@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo } from 'react'
 import { useCharacter } from '@/stores/characterStore'
 import { useSettings } from '@/stores/settingsStore'
@@ -14,8 +14,9 @@ import { AssistantPanel } from '@/components/assistant/AssistantPanel'
 import { AssistantFab } from '@/components/assistant/AssistantFab'
 import { SmartNudge } from '@/components/assistant/SmartNudge'
 import { Avatar } from '@/components/character/Avatar'
+import { TopBar } from '@/components/TopBar'
 import { NAV_ICONS, type LucideIcon } from '@/components/icons'
-import { Bot } from 'lucide-react'
+import { Bot, Settings as SettingsIcon } from 'lucide-react'
 
 interface NavItem {
   to: string
@@ -81,6 +82,7 @@ export function Layout() {
   const unread = useNotifications((s) => s.unreadCount())
   const reminders = useReminders((s) => s.reminders)
   const openAssistant = useAssistant((s) => s.setPanelOpen)
+  const nav = useNavigate()
 
   useReminderEngine()
 
@@ -152,23 +154,20 @@ export function Layout() {
   return (
     <div className="ryse-shell min-h-full flex">
       {/* Sidebar */}
-      <aside className="hidden md:flex md:flex-col w-60 lg:w-64 shrink-0 border-r border-border bg-surface/40 backdrop-blur sticky top-0 h-screen">
-        <div className="p-5 border-b border-border flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center shadow-glow">
-            <span className="font-display text-bg text-xl tracking-tight">R</span>
+      <aside className="hidden md:flex md:flex-col w-56 lg:w-60 shrink-0 border-r border-border bg-surface/30 backdrop-blur sticky top-0 h-screen">
+        <div className="px-5 pt-6 pb-5 flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center shadow-glow">
+            <span className="font-display font-extrabold text-bg text-lg">R</span>
           </div>
-          <div className="leading-tight">
-            <div className="font-display text-xl tracking-[0.24em] text-text">RYSE</div>
-            <div className="text-[9px] uppercase tracking-[0.28em] text-muted">the longest game</div>
-          </div>
+          <div className="font-display font-bold text-xl tracking-tight text-text">Ryse</div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+        <nav className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
           {NAV_GROUPS.map((group, gi) => (
             <div key={group.label} className="space-y-1">
-              <div className="px-3 mb-1.5 text-[9px] uppercase tracking-[0.32em] text-muted/60 font-mono flex items-center gap-2">
+              <div className="px-2 mb-1 text-[9px] uppercase tracking-[0.28em] text-muted/50 font-medium flex items-center gap-2">
                 <span>{group.label}</span>
-                <span className="flex-1 h-px bg-border/40" />
+                <span className="flex-1 h-px bg-border/30" />
               </div>
               {group.items.map((n) => {
                 const badge = badgeFor(n.to)
@@ -178,25 +177,27 @@ export function Layout() {
                     to={n.to}
                     end={n.to === '/'}
                     className={({ isActive }) =>
-                      `group flex items-center gap-3 px-2 py-1.5 rounded-xl text-sm transition-all ${
+                      `group relative flex items-center gap-3 pr-2 rounded-2xl text-sm transition-all ${
                         isActive
-                          ? 'bg-accent/15 text-text border border-accent/30 shadow-glow'
-                          : 'text-muted hover:text-text hover:bg-surface2/40 border border-transparent'
+                          ? 'bg-gradient-to-r from-accent/15 via-accent/5 to-transparent text-text'
+                          : 'text-muted hover:text-text'
                       }`
                     }
                   >
                     {({ isActive }) => (
                       <>
                         <span
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                          className={`shrink-0 flex items-center justify-center transition-all ${
                             isActive
-                              ? 'bg-gradient-to-br from-accent to-accent2 text-bg shadow-glow'
-                              : 'bg-surface2/60 border border-border/60 text-muted group-hover:text-accent group-hover:border-accent/40'
+                              ? 'w-11 h-11 rounded-2xl bg-gradient-to-br from-accent to-accent2 text-bg shadow-[0_8px_24px_-4px_rgb(96_165_250/0.6)] ring-1 ring-accent/40'
+                              : 'w-9 h-9 rounded-xl bg-surface2/40 border border-border/40 text-muted/80 group-hover:text-accent group-hover:border-accent/30 group-hover:bg-surface2/60'
                           }`}
                         >
-                          <NavIcon to={n.to} className="w-4 h-4" />
+                          <NavIcon to={n.to} className={isActive ? 'w-5 h-5' : 'w-4 h-4'} />
                         </span>
-                        <span className={isActive ? 'font-medium' : ''}>{n.label}</span>
+                        <span className={`${isActive ? 'font-semibold tracking-tight' : ''} truncate`}>
+                          {n.label}
+                        </span>
                         {badge > 0 && (
                           <span className="ml-auto text-[10px] bg-accent text-bg px-1.5 py-0.5 rounded-full font-bold">
                             {badge}
@@ -207,45 +208,64 @@ export function Layout() {
                   </NavLink>
                 )
               })}
-              {gi < NAV_GROUPS.length - 1 && <div className="pt-2" />}
+              {gi < NAV_GROUPS.length - 1 && <div className="pt-1" />}
             </div>
           ))}
         </nav>
 
-        <button
-          onClick={() => openAssistant(true)}
-          className="mx-3 mb-2 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 transition-colors"
-        >
-          <Bot className="w-4 h-4 shrink-0" />
-          <span className="font-medium">Ask Assistant</span>
-          <span className="ml-auto text-[9px] uppercase tracking-wider text-accent/70">GM</span>
-        </button>
-
-        <div className="p-3 border-t border-border text-[10px] text-muted">
-          <div className="flex items-center gap-2">
-            <Avatar id={character.avatar} className="w-7 h-7 border border-border text-accent" />
-            <div className="leading-tight">
-              <div className="text-text text-xs font-medium">{character.name || 'Hero'}</div>
-              <div>Lv {character.level} · {character.activeTitle}</div>
+        <div className="border-t border-border/40 px-3 py-3 space-y-1">
+          <button
+            onClick={() => openAssistant(true)}
+            className="w-full flex items-center gap-3 pr-2 rounded-2xl text-sm text-muted hover:text-text transition-colors group"
+          >
+            <span className="w-9 h-9 rounded-xl bg-surface2/40 border border-border/40 flex items-center justify-center group-hover:text-accent group-hover:border-accent/30">
+              <Bot className="w-4 h-4" />
+            </span>
+            <span>Ask Assistant</span>
+          </button>
+          <button
+            onClick={() => nav('/settings')}
+            className="w-full flex items-center gap-3 pr-2 rounded-2xl text-sm text-muted hover:text-text transition-colors group"
+          >
+            <span className="w-9 h-9 rounded-xl bg-surface2/40 border border-border/40 flex items-center justify-center group-hover:text-accent group-hover:border-accent/30">
+              <SettingsIcon className="w-4 h-4" />
+            </span>
+            <span>Settings</span>
+          </button>
+          <button
+            onClick={() => nav('/profile')}
+            className="w-full flex items-center gap-3 pr-2 rounded-2xl text-sm text-muted hover:text-text transition-colors mt-1"
+          >
+            <Avatar id={character.avatar} className="w-9 h-9 border border-border text-accent" />
+            <div className="leading-tight text-left min-w-0">
+              <div className="text-text text-xs font-medium truncate">{character.name || 'Hero'}</div>
+              <div className="text-[10px] truncate">Lv {character.level} · {character.activeTitle}</div>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
 
       {/* Main */}
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 flex flex-col">
         <div className="md:hidden sticky top-0 z-40 bg-surface/80 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
-          <div className="font-display tracking-[0.28em] text-accent">RYSE</div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent2 flex items-center justify-center">
+              <span className="font-display font-extrabold text-bg text-sm">R</span>
+            </div>
+            <div className="font-display font-bold tracking-tight">Ryse</div>
+          </div>
           <div className="flex items-center gap-3 text-xs text-muted">
             <button onClick={() => openAssistant(true)} className="text-accent" aria-label="Assistant">
               <Bot className="w-5 h-5" />
             </button>
-            <Avatar id={character.avatar} className="w-6 h-6 border border-border text-accent" />
+            <Avatar id={character.avatar} className="w-7 h-7 border border-border text-accent" />
             <span>Lv {character.level}</span>
           </div>
         </div>
 
-        <div className="p-4 md:p-8 max-w-6xl mx-auto pb-32 md:pb-12">
+        <TopBar />
+
+        <div className="px-4 pt-4 pb-32 md:px-8 md:pt-2 md:pb-12 max-w-6xl w-full mx-auto flex-1">
           <Outlet />
         </div>
       </main>

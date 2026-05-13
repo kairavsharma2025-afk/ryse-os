@@ -313,31 +313,66 @@ body::before {
     radial-gradient(ellipse at bottom, rgb(var(--accent2) / 0.04), transparent 60%);
 }
 
-/* ===== Cosmos: starfield + nebula glow + mountain horizon ===== */
+/* ===== Cosmos: starfield + nebula glow + sunset horizon ===== */
 .theme-cosmos body::before,
 html.theme-cosmos body::before {
   background-image:
-    /* nebula */
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgb(96 165 250 / 0.22), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 90% 30%, rgb(168 85 247 / 0.14), transparent 65%),
-    radial-gradient(ellipse 70% 50% at 10% 80%, rgb(56 189 248 / 0.10), transparent 65%),
-    /* mountain silhouette — broken polygon outline */
-    radial-gradient(ellipse 38% 14% at 18% 100%, rgb(20 30 64 / 0.95), transparent 70%),
-    radial-gradient(ellipse 30% 12% at 38% 100%, rgb(28 38 80 / 0.85), transparent 70%),
-    radial-gradient(ellipse 42% 16% at 62% 100%, rgb(18 28 60 / 0.95), transparent 72%),
-    radial-gradient(ellipse 34% 13% at 86% 100%, rgb(26 36 76 / 0.85), transparent 70%),
-    /* horizon glow */
-    linear-gradient(to top, rgb(40 80 160 / 0.18) 0%, transparent 40%);
+    /* deep nebula glow top-left */
+    radial-gradient(ellipse 70% 50% at 20% 10%, rgb(64 96 180 / 0.35), transparent 60%),
+    /* purple nebula top-right */
+    radial-gradient(ellipse 55% 45% at 90% 25%, rgb(150 100 220 / 0.22), transparent 65%),
+    /* bright galaxy bottom-right */
+    radial-gradient(ellipse 45% 30% at 92% 88%, rgb(120 160 240 / 0.32), transparent 60%),
+    /* warm sunset glow over mountains */
+    radial-gradient(ellipse 90% 28% at 50% 100%, rgb(255 140 80 / 0.18), transparent 65%),
+    radial-gradient(ellipse 65% 18% at 35% 100%, rgb(230 100 60 / 0.12), transparent 70%),
+    /* mountain silhouette band */
+    linear-gradient(to top, rgb(10 12 28) 0%, rgb(10 12 28) 12%, transparent 24%),
+    /* deep base */
+    linear-gradient(to top, rgb(8 11 26) 0%, rgb(12 16 36) 50%, rgb(7 11 28) 100%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* SVG mountain ridge layered above the horizon glow. */
+.theme-cosmos body,
+html.theme-cosmos body {
+  position: relative;
+}
+.theme-cosmos body::after,
+html.theme-cosmos body::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24vh;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    /* near ridge */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 240' preserveAspectRatio='none'><path d='M0 240 L0 160 L80 110 L160 145 L240 95 L320 130 L400 75 L490 125 L580 90 L680 140 L770 100 L860 145 L950 110 L1040 150 L1130 115 L1200 145 L1200 240 Z' fill='%23070a18'/></svg>"),
+    /* far ridge with warm glow */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 240' preserveAspectRatio='none'><path d='M0 240 L0 190 L100 160 L200 175 L320 140 L420 165 L520 135 L630 160 L740 130 L860 165 L960 140 L1080 170 L1200 145 L1200 240 Z' fill='%2312182f'/></svg>");
+  background-size: 100% 100%, 100% 100%;
+  background-position: bottom, bottom;
+  background-repeat: no-repeat;
 }
 
 .theme-cosmos.mode-light body::before,
 html.theme-cosmos.mode-light body::before {
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgb(96 165 250 / 0.18), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 90% 30%, rgb(168 85 247 / 0.08), transparent 65%),
-    radial-gradient(ellipse 38% 14% at 18% 100%, rgb(165 195 240 / 0.7), transparent 70%),
-    radial-gradient(ellipse 42% 16% at 62% 100%, rgb(150 180 235 / 0.7), transparent 72%),
-    linear-gradient(to top, rgb(200 220 250 / 0.5) 0%, transparent 40%);
+    radial-gradient(ellipse 70% 50% at 20% 10%, rgb(160 190 240 / 0.4), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 90% 25%, rgb(200 175 240 / 0.3), transparent 65%),
+    radial-gradient(ellipse 45% 30% at 92% 88%, rgb(180 210 250 / 0.4), transparent 60%),
+    radial-gradient(ellipse 90% 28% at 50% 100%, rgb(255 190 150 / 0.25), transparent 65%),
+    linear-gradient(to top, rgb(228 238 252) 0%, rgb(232 242 255) 50%, rgb(238 246 255) 100%);
+}
+.theme-cosmos.mode-light body::after,
+html.theme-cosmos.mode-light body::after {
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 240' preserveAspectRatio='none'><path d='M0 240 L0 160 L80 110 L160 145 L240 95 L320 130 L400 75 L490 125 L580 90 L680 140 L770 100 L860 145 L950 110 L1040 150 L1130 115 L1200 145 L1200 240 Z' fill='%23a8b8d5'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 240' preserveAspectRatio='none'><path d='M0 240 L0 190 L100 160 L200 175 L320 140 L420 165 L520 135 L630 160 L740 130 L860 165 L960 140 L1080 170 L1200 145 L1200 240 Z' fill='%23c4d2ec'/></svg>");
 }
 
 /* Starfield layer — dotted radial-gradients painted over fixed bg. */
@@ -411,28 +446,31 @@ html.theme-cosmos:not(.mode-light)::after {
 }
 
 /* The whole app sits inside a rounded glass panel on Cosmos — like the reference. */
-.ryse-shell {
-  /* default themes: edge-to-edge */
-}
 .theme-cosmos .ryse-shell {
   margin: 0;
   border-radius: 0;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 @media (min-width: 768px) {
   .theme-cosmos .ryse-shell {
-    margin: 16px;
-    border-radius: 28px;
-    border: 1px solid rgb(var(--border) / 0.5);
-    background: rgb(var(--surface) / 0.35);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    box-shadow: 0 24px 80px -24px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.05);
-    min-height: calc(100vh - 32px);
+    margin: 28px;
+    border-radius: 32px;
+    border: 1px solid rgb(var(--border) / 0.45);
+    background: rgb(var(--bg) / 0.55);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    box-shadow: 0 32px 100px -28px rgb(0 0 0 / 0.6),
+      0 1px 0 rgb(255 255 255 / 0.05) inset,
+      0 0 80px -20px rgb(96 165 250 / 0.18) inset;
+    min-height: calc(100vh - 56px);
   }
   .theme-cosmos.mode-light .ryse-shell {
-    background: rgb(255 255 255 / 0.45);
-    box-shadow: 0 24px 80px -24px rgb(60 80 130 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.5);
+    background: rgb(255 255 255 / 0.55);
+    border-color: rgb(var(--border) / 0.6);
+    box-shadow: 0 32px 100px -28px rgb(60 80 130 / 0.28),
+      0 1px 0 rgb(255 255 255 / 0.6) inset;
   }
 }
 

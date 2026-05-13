@@ -25,9 +25,10 @@ export default {
         legendary: 'rgb(var(--legendary) / <alpha-value>)',
       },
       fontFamily: {
-        display: ['Cinzel', 'Georgia', 'serif'],
+        display: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        rpg: ['Cinzel', 'Georgia', 'serif'],
       },
       boxShadow: {
         glow: '0 0 24px -4px rgb(var(--accent) / 0.6)',
