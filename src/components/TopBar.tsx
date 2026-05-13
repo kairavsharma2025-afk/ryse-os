@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Bell, Search, ChevronDown, ChevronRight } from 'lucide-react'
+import { Bell, Search } from 'lucide-react'
 import { useCharacter } from '@/stores/characterStore'
 import { useNotifications } from '@/stores/notificationsStore'
 import { Avatar } from '@/components/character/Avatar'
@@ -36,36 +36,29 @@ export function TopBar() {
 
   return (
     <div className="hidden md:flex items-center gap-4 px-8 pt-6 pb-3 sticky top-0 z-20 bg-surface/40 backdrop-blur-md border-b border-border/30">
-      {/* breadcrumbs */}
-      <nav className="flex items-center gap-2 text-sm text-muted">
-        <button
-          onClick={() => nav('/')}
-          className="hover:text-text transition-colors flex items-center gap-1.5"
-        >
-          <span className="w-2 h-2 rounded-sm bg-muted/40" />
-          <span>Home</span>
-        </button>
-        <ChevronRight className="w-3 h-3 text-muted/40" />
-        <button className="hover:text-text transition-colors flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-muted/40" />
-          <span>{pageLabel}</span>
-        </button>
-        <ChevronRight className="w-3 h-3 text-muted/40" />
-        <button className="hover:text-text transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface2/40 border border-border/60">
-          <span className="w-2 h-2 rounded-sm bg-accent" />
-          <span>{dateLabel}</span>
-          <ChevronDown className="w-3 h-3" />
-        </button>
-      </nav>
+      {/* page heading + date */}
+      <div className="flex items-baseline gap-3 min-w-0">
+        <h2 className="font-display font-bold text-xl tracking-tight text-text truncate">
+          {pageLabel}
+        </h2>
+        <span className="text-xs uppercase tracking-[0.24em] text-muted whitespace-nowrap">
+          {dateLabel}
+        </span>
+      </div>
+
+      {/* search pill — fills the empty space */}
+      <div className="flex-1 max-w-md mx-auto">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted/70 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search goals, reminders, notes…"
+            className="w-full bg-surface2/40 border border-border/50 rounded-full pl-9 pr-4 py-2 text-sm placeholder:text-muted/60 focus:outline-none focus:border-accent/50 focus:bg-surface2/70 transition-colors"
+          />
+        </div>
+      </div>
 
       <div className="ml-auto flex items-center gap-2.5">
-        <button
-          className="w-10 h-10 rounded-full bg-surface2/60 border border-border/60 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-colors"
-          title="Search"
-          aria-label="Search"
-        >
-          <Search className="w-4 h-4" />
-        </button>
         <button
           onClick={() => nav('/reminders')}
           className="relative w-10 h-10 rounded-full bg-surface2/60 border border-border/60 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-colors"
