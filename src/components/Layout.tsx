@@ -102,11 +102,29 @@ export function Layout() {
   // characters who pre-date themes added later — e.g. Cosmos).
   const unlockTheme = useCharacter((s) => s.unlockTheme)
   const ownedThemes = useCharacter((s) => s.unlockedThemes)
+  const setActiveTheme = useCharacter((s) => s.setActiveTheme)
+  const activeTheme = useCharacter((s) => s.activeTheme)
   useEffect(() => {
     for (const t of THEMES) {
       if (t.unlockedByDefault && !ownedThemes.includes(t.id)) unlockTheme(t.id)
     }
   }, [ownedThemes, unlockTheme])
+
+  // One-shot: legacy characters were created when 'default' was the only choice.
+  // Move them to the new Cosmos look once; if they want Obsidian Dawn back it's
+  // one click in Settings → Theme.
+  useEffect(() => {
+    const KEY = 'lifeos:v1:cosmos_migration_v1'
+    try {
+      if (localStorage.getItem(KEY)) return
+      if (activeTheme === 'default') setActiveTheme('cosmos')
+      localStorage.setItem(KEY, '1')
+    } catch {
+      /* localStorage unavailable — skip */
+    }
+    // run once per device
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     const className = THEMES.find((t) => t.id === theme)?.className ?? 'theme-default'
