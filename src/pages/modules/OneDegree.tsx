@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { todayISO } from '@/engine/dates'
 import { getOneDegreeQuestionForDate, ONE_DEGREE_QUESTIONS } from '@/data/oneDegree'
 import { actionAnswerOneDegree } from '@/engine/gameLoop'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
 
 export function OneDegree() {
   const today = todayISO()
@@ -14,6 +15,7 @@ export function OneDegree() {
   )
   const all = useModules((s) => s.oneDegree.answers)
   const [text, setText] = useState(ans?.text ?? '')
+  const [interim, setInterim] = useState('')
 
   return (
     <div className="space-y-6">
@@ -31,13 +33,25 @@ export function OneDegree() {
         <div className="font-display text-2xl md:text-3xl tracking-wide leading-snug mb-5 text-balance">
           {q.text}
         </div>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={6}
-          placeholder="Write something honest. No one will see it but you."
-          className="w-full bg-surface2 border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-accent leading-relaxed"
-        />
+        <div className="relative">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={6}
+            placeholder="Write something honest. No one will see it but you."
+            className="w-full bg-surface2 border border-border rounded-lg px-4 py-3 pr-12 text-sm focus:outline-none focus:border-accent leading-relaxed"
+          />
+          <div className="absolute top-2 right-2">
+            <VoiceInputButton
+              onTranscript={(t) => setText((p) => (p.trim() ? `${p} ${t}` : t))}
+              onInterim={setInterim}
+              title="Answer aloud"
+            />
+          </div>
+        </div>
+        {interim && (
+          <div className="text-[11px] text-accent2/80 italic mt-1.5 px-1">{interim}</div>
+        )}
         <div className="flex items-center justify-between mt-3">
           <div className="text-xs text-muted">+15 XP per answer</div>
           <Button

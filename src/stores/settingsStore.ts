@@ -4,6 +4,7 @@ import { loadJSON, saveJSON } from './persist'
 
 const DEFAULTS: Settings = {
   theme: 'default',
+  colorMode: 'dark',
   notifications: 'unknown',
   reduceMotion: false,
   hardModeXp: false,

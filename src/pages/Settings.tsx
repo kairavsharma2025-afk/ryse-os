@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { differenceInCalendarDays, format } from 'date-fns'
-import { Bot, Moon, Smartphone, Sunrise, Car, Cake, ArrowRight } from 'lucide-react'
+import { Bot, Moon, Smartphone, Sunrise, Car, Cake, ArrowRight, Sun } from 'lucide-react'
 import { useSettings } from '@/stores/settingsStore'
 import { useCharacter } from '@/stores/characterStore'
 import { useBirthdays } from '@/stores/birthdaysStore'
@@ -158,6 +158,44 @@ export function Settings() {
           )}
         </Card>
       )}
+
+      <Card className="p-5">
+        <h3 className="font-display text-lg mb-3">Appearance</h3>
+        <div className="text-xs text-muted mb-3 leading-relaxed">
+          Light or dark. Cosmos theme adapts to both; other themes stay dark.
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {(['dark', 'light'] as const).map((mode) => {
+            const active = settings.colorMode === mode
+            const Icon = mode === 'dark' ? Moon : Sun
+            return (
+              <button
+                key={mode}
+                onClick={() => settings.set('colorMode', mode)}
+                className={`p-4 rounded-xl border text-left transition flex items-center gap-3 ${
+                  active
+                    ? 'border-accent bg-accent/10 shadow-glow'
+                    : 'border-border bg-surface2/40 hover:border-accent/40'
+                }`}
+              >
+                <span
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                    active ? 'border-accent/50 bg-accent/15 text-accent' : 'border-border bg-surface text-muted'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" strokeWidth={1.8} />
+                </span>
+                <div>
+                  <div className="text-sm capitalize">{mode} mode</div>
+                  <div className="text-[11px] text-muted">
+                    {mode === 'dark' ? 'Starfield over deep blue' : 'Bright sky, soft glass'}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
 
       <Card className="p-5">
         <h3 className="font-display text-lg mb-3">Theme</h3>

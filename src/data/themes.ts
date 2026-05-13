@@ -12,9 +12,18 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   {
+    id: 'cosmos',
+    name: 'Cosmos',
+    description: 'Starfield over deep blue. Adapts to light & dark.',
+    className: 'theme-cosmos',
+    rarity: 'common',
+    unlockedByDefault: true,
+    preview: { bg: '#070b1c', surface: '#101630', accent: '#60a5fa', accent2: '#a7c5ff' },
+  },
+  {
     id: 'default',
     name: 'Obsidian Dawn',
-    description: 'The default look. Clean, premium, dark.',
+    description: 'Clean, premium, dark. The original look.',
     className: 'theme-default',
     rarity: 'common',
     unlockedByDefault: true,

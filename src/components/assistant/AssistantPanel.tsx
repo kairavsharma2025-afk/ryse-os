@@ -6,6 +6,7 @@ import { useAssistant } from '@/stores/assistantStore'
 import { useSettings } from '@/stores/settingsStore'
 import { askAssistant } from '@/engine/assistantActions'
 import { RichText } from './RichText'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
 
 const STARTERS = [
   'What should I focus on today?',
@@ -24,8 +25,13 @@ export function AssistantPanel() {
   const hasKey = useSettings((s) => !!s.anthropicApiKey?.trim())
   const nav = useNavigate()
   const [draft, setDraft] = useState('')
+  const [interim, setInterim] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  const appendDraft = (text: string) => {
+    setDraft((d) => (d.trim() ? `${d} ${text}` : text))
+  }
 
   useEffect(() => {
     if (!open) return
@@ -181,31 +187,41 @@ export function AssistantPanel() {
                 e.preventDefault()
                 send(draft)
               }}
-              className="border-t border-border p-3 flex items-end gap-2"
+              className="border-t border-border p-3 flex flex-col gap-1.5"
             >
-              <textarea
-                ref={inputRef}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    send(draft)
-                  }
-                }}
-                rows={1}
-                placeholder={hasKey ? 'Tell me what’s going on…' : 'Add an API key in Settings first'}
-                disabled={!hasKey}
-                className="flex-1 resize-none max-h-32 bg-surface2 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/50 disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={!hasKey || thinking || !draft.trim()}
-                className="shrink-0 w-10 h-10 rounded-xl bg-accent text-bg flex items-center justify-center hover:bg-accent2 disabled:opacity-40 disabled:pointer-events-none transition-colors"
-                title="Send"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+              {interim && (
+                <div className="text-[11px] text-accent2/80 italic px-1 truncate">{interim}</div>
+              )}
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={inputRef}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      send(draft)
+                    }
+                  }}
+                  rows={1}
+                  placeholder={hasKey ? 'Tell me what’s going on…' : 'Add an API key in Settings first'}
+                  disabled={!hasKey}
+                  className="flex-1 resize-none max-h-32 bg-surface2 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-accent/50 disabled:opacity-50"
+                />
+                <VoiceInputButton
+                  onTranscript={appendDraft}
+                  onInterim={setInterim}
+                  title="Hold a thought aloud — tap to start, tap to stop"
+                />
+                <button
+                  type="submit"
+                  disabled={!hasKey || thinking || !draft.trim()}
+                  className="shrink-0 w-10 h-10 rounded-xl bg-accent text-bg flex items-center justify-center hover:bg-accent2 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  title="Send"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
             </form>
           </motion.aside>
         </motion.div>

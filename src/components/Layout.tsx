@@ -98,6 +98,16 @@ export function Layout() {
     runOpeningTick()
   }, [])
 
+  // Auto-grant any unlocked-by-default theme that isn't owned yet (covers existing
+  // characters who pre-date themes added later — e.g. Cosmos).
+  const unlockTheme = useCharacter((s) => s.unlockTheme)
+  const ownedThemes = useCharacter((s) => s.unlockedThemes)
+  useEffect(() => {
+    for (const t of THEMES) {
+      if (t.unlockedByDefault && !ownedThemes.includes(t.id)) unlockTheme(t.id)
+    }
+  }, [ownedThemes, unlockTheme])
+
   useEffect(() => {
     const className = THEMES.find((t) => t.id === theme)?.className ?? 'theme-default'
     document.documentElement.classList.forEach((c) => {
@@ -105,6 +115,13 @@ export function Layout() {
     })
     document.documentElement.classList.add(className)
   }, [theme])
+
+  useEffect(() => {
+    const cls = settings.colorMode === 'light' ? 'mode-light' : 'mode-dark'
+    const other = settings.colorMode === 'light' ? 'mode-dark' : 'mode-light'
+    document.documentElement.classList.remove(other)
+    document.documentElement.classList.add(cls)
+  }, [settings.colorMode])
 
   useEffect(() => {
     if (settings.reduceMotion) {

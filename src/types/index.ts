@@ -349,6 +349,7 @@ export interface SoundSettings {
 
 export interface Settings {
   theme: string
+  colorMode: 'light' | 'dark'
   notifications: 'unknown' | 'granted' | 'denied'
   reduceMotion: boolean
   hardModeXp: boolean // 0.7x XP, +25% achievement aura

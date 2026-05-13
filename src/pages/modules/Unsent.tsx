@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/Button'
 import { actionWriteUnsent } from '@/engine/gameLoop'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame } from '@/components/icons'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
 
 export function Unsent() {
   const drafts = useModules((s) => s.unsent.drafts)
   const burn = useModules((s) => s.burnDraft)
   const [recipient, setRecipient] = useState('')
   const [body, setBody] = useState('')
+  const [interim, setInterim] = useState('')
 
   const submit = () => {
     if (!recipient.trim() || !body.trim()) return
@@ -39,13 +41,25 @@ export function Unsent() {
           placeholder="To… (e.g. Dad, the version of me at 17, my old boss)"
           className="w-full bg-surface2 border border-border rounded-lg px-4 py-2.5 mb-3 focus:outline-none focus:border-accent"
         />
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={10}
-          placeholder="Write. Don't edit. No one will read this."
-          className="w-full bg-surface2 border border-border rounded-lg px-4 py-3 text-sm leading-relaxed focus:outline-none focus:border-accent"
-        />
+        <div className="relative">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={10}
+            placeholder="Write. Don't edit. No one will read this."
+            className="w-full bg-surface2 border border-border rounded-lg px-4 py-3 pr-12 text-sm leading-relaxed focus:outline-none focus:border-accent"
+          />
+          <div className="absolute top-2 right-2">
+            <VoiceInputButton
+              onTranscript={(t) => setBody((b) => (b.trim() ? `${b} ${t}` : t))}
+              onInterim={setInterim}
+              title="Speak — say what you'd never send"
+            />
+          </div>
+        </div>
+        {interim && (
+          <div className="text-[11px] text-accent2/80 italic mt-1.5 px-1">{interim}</div>
+        )}
         <div className="flex items-center justify-between mt-3">
           <div className="text-xs text-muted">+20 XP per draft</div>
           <Button disabled={!recipient.trim() || !body.trim()} onClick={submit}>

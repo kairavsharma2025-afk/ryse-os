@@ -3,6 +3,9 @@ import { useModules } from '@/stores/modulesStore'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { actionLogSilence } from '@/engine/gameLoop'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
+
+const append = (cur: string, add: string) => (cur.trim() ? `${cur} ${add}` : add)
 
 const COMMON_TRIGGERS = [
   'Work deadline',
@@ -104,23 +107,29 @@ export function Silence() {
             <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">
               Pattern (optional)
             </div>
-            <input
-              value={pattern}
-              onChange={(e) => setPattern(e.target.value)}
-              placeholder="Have I been here before?"
-              className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
-            />
+            <div className="flex gap-2">
+              <input
+                value={pattern}
+                onChange={(e) => setPattern(e.target.value)}
+                placeholder="Have I been here before?"
+                className="flex-1 bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
+              />
+              <VoiceInputButton onTranscript={(t) => setPattern((p) => append(p, t))} />
+            </div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">
               Insight (optional)
             </div>
-            <input
-              value={insight}
-              onChange={(e) => setInsight(e.target.value)}
-              placeholder="What is it asking for?"
-              className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
-            />
+            <div className="flex gap-2">
+              <input
+                value={insight}
+                onChange={(e) => setInsight(e.target.value)}
+                placeholder="What is it asking for?"
+                className="flex-1 bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent"
+              />
+              <VoiceInputButton onTranscript={(t) => setInsight((p) => append(p, t))} />
+            </div>
           </div>
           <div className="flex justify-end">
             <Button disabled={!trigger.trim() || !emotion.trim()} onClick={submit}>
