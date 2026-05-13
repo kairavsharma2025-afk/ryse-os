@@ -132,21 +132,22 @@ export function Layout() {
   }, [settings.reduceMotion])
 
   return (
-    <div className="min-h-full flex">
+    <div className="ryse-shell min-h-full flex">
       {/* Sidebar */}
       <aside className="hidden md:flex md:flex-col w-60 lg:w-64 shrink-0 border-r border-border bg-surface/40 backdrop-blur sticky top-0 h-screen">
-        <div className="p-5 border-b border-border">
-          <div className="font-display text-2xl tracking-[0.28em] text-accent">
-            RYSE
+        <div className="p-5 border-b border-border flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent2 flex items-center justify-center shadow-glow">
+            <span className="font-display text-bg text-xl tracking-tight">R</span>
           </div>
-          <div className="text-[10px] uppercase tracking-[0.3em] text-muted mt-1">
-            real life · the longest game
+          <div className="leading-tight">
+            <div className="font-display text-xl tracking-[0.24em] text-text">RYSE</div>
+            <div className="text-[9px] uppercase tracking-[0.28em] text-muted">the longest game</div>
           </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
           {NAV_GROUPS.map((group, gi) => (
-            <div key={group.label} className="space-y-0.5">
+            <div key={group.label} className="space-y-1">
               <div className="px-3 mb-1.5 text-[9px] uppercase tracking-[0.32em] text-muted/60 font-mono flex items-center gap-2">
                 <span>{group.label}</span>
                 <span className="flex-1 h-px bg-border/40" />
@@ -159,19 +160,31 @@ export function Layout() {
                     to={n.to}
                     end={n.to === '/'}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      `group flex items-center gap-3 px-2 py-1.5 rounded-xl text-sm transition-all ${
                         isActive
-                          ? 'bg-accent/15 text-accent border border-accent/30'
+                          ? 'bg-accent/15 text-text border border-accent/30 shadow-glow'
                           : 'text-muted hover:text-text hover:bg-surface2/40 border border-transparent'
                       }`
                     }
                   >
-                    <NavIcon to={n.to} className="w-4 h-4 shrink-0" />
-                    <span>{n.label}</span>
-                    {badge > 0 && (
-                      <span className="ml-auto text-[10px] bg-accent text-bg px-1.5 py-0.5 rounded-full font-bold">
-                        {badge}
-                      </span>
+                    {({ isActive }) => (
+                      <>
+                        <span
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                            isActive
+                              ? 'bg-gradient-to-br from-accent to-accent2 text-bg shadow-glow'
+                              : 'bg-surface2/60 border border-border/60 text-muted group-hover:text-accent group-hover:border-accent/40'
+                          }`}
+                        >
+                          <NavIcon to={n.to} className="w-4 h-4" />
+                        </span>
+                        <span className={isActive ? 'font-medium' : ''}>{n.label}</span>
+                        {badge > 0 && (
+                          <span className="ml-auto text-[10px] bg-accent text-bg px-1.5 py-0.5 rounded-full font-bold">
+                            {badge}
+                          </span>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 )

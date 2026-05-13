@@ -162,7 +162,7 @@ export function Settings() {
       <Card className="p-5">
         <h3 className="font-display text-lg mb-3">Appearance</h3>
         <div className="text-xs text-muted mb-3 leading-relaxed">
-          Light or dark. Cosmos theme adapts to both; other themes stay dark.
+          Light or dark. Every theme has both — same accent, light or dark canvas.
         </div>
         <div className="grid grid-cols-2 gap-3">
           {(['dark', 'light'] as const).map((mode) => {

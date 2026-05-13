@@ -13,7 +13,7 @@ export function Card({ variant = 'default', className = '', children, ...rest }:
   }
   return (
     <div
-      className={`rounded-2xl ${variants[variant]} ${className}`}
+      className={`ryse-card rounded-2xl ${variants[variant]} ${className}`}
       {...rest}
     >
       {children}
