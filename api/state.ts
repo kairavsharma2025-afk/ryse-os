@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { and, eq, inArray, sql } from 'drizzle-orm'
-import { db } from '../db/client'
-import { userState } from '../db/schema'
-import { getUserId } from './_lib/auth'
+import { db } from '../db/client.js'
+import { userState } from '../db/schema.js'
+import { getUserId } from './_lib/auth.js'
 
 const MAX_KEYS_PER_REQUEST = 64
 const MAX_KEY_LENGTH = 128

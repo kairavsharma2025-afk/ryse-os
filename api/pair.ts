@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { and, eq, lt, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
-import { db } from '../db/client'
-import { syncPairing } from '../db/schema'
+import { db } from '../db/client.js'
+import { syncPairing } from '../db/schema.js'
 
 const CODE_TTL_MS = 10 * 60_000 // 10 minutes
 
