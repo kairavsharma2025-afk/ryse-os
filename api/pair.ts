@@ -96,8 +96,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(400).json({ error: 'unknown action' })
   } catch (err) {
     console.error('[api/pair]', err)
-    const message = err instanceof Error ? err.message : String(err)
-    const stack = err instanceof Error ? err.stack : undefined
-    res.status(500).json({ error: 'internal error', message, stack })
+    res.status(500).json({ error: 'internal error' })
   }
 }
