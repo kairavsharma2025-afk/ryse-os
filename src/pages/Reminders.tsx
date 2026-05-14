@@ -1,287 +1,143 @@
-import { useMemo, useState, type FormEvent } from 'react'
-import { format, parseISO } from 'date-fns'
-import { Bell, BellPlus, Clock, Trash2, Bot, RotateCw, AlarmClock, Flag, Target } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Bell, BellPlus, Bot, AlarmClock, CheckCircle2, Filter } from 'lucide-react'
+import { addDays, isAfter, isBefore } from 'date-fns'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Card } from '@/components/ui/Card'
 import { Empty } from '@/components/ui/Empty'
 import { useReminders } from '@/stores/remindersStore'
 import { useAssistant } from '@/stores/assistantStore'
 import { useSettings } from '@/stores/settingsStore'
 import { useGoals } from '@/stores/goalsStore'
-import { AREA_LIST, AREAS } from '@/data/areas'
-import { todayISO } from '@/engine/dates'
+import { AREA_LIST } from '@/data/areas'
+import { AREA_ICONS } from '@/components/icons'
 import { nextFireTime } from '@/engine/remindersEngine'
-import type { AreaId, Goal, Reminder, ReminderPriority, ReminderRepeat } from '@/types'
+import { todayISO } from '@/engine/dates'
+import { RemindersBanner } from '@/components/reminders/RemindersBanner'
+import { ReminderRow } from '@/components/reminders/ReminderRow'
+import { ReminderForm, type ReminderFormDraft } from '@/components/reminders/ReminderForm'
+import type { AreaId, Reminder } from '@/types'
 
-const REPEATS: { id: ReminderRepeat; label: string }[] = [
-  { id: 'once', label: 'Once' },
-  { id: 'daily', label: 'Daily' },
-  { id: 'weekly', label: 'Weekly' },
-  { id: 'monthly', label: 'Monthly' },
-]
-const PRIORITIES: { id: ReminderPriority; label: string }[] = [
-  { id: 'low', label: 'Low' },
-  { id: 'normal', label: 'Normal' },
-  { id: 'high', label: 'High' },
-]
 const prioRank = (r: Reminder): number => (r.priority === 'high' ? 0 : r.priority === 'low' ? 2 : 1)
 
-const inputCls =
-  'w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50'
-const labelCls = 'text-[10px] uppercase tracking-[0.2em] text-muted mb-1.5 block'
-const segCls = (active: boolean) =>
-  `px-2 py-2 rounded-lg border text-xs transition ${
-    active ? 'border-accent bg-accent/10 text-text' : 'border-border bg-surface2/40 text-muted hover:text-text'
-  }`
+type StatusTab = 'upcoming' | 'snoozed' | 'archive'
 
-interface ReminderDraft {
-  title: string
-  date: string
-  time: string
-  repeat: ReminderRepeat
-  category: AreaId
-  notes: string
-  priority: ReminderPriority
-  goalId: string
+interface DecoratedReminder {
+  r: Reminder
+  next: Date | null
 }
 
-function ReminderForm({
-  initial,
-  goals,
-  onSave,
-  onCancel,
-}: {
-  initial?: Partial<Reminder>
-  goals: Goal[]
-  onSave(v: ReminderDraft): void
-  onCancel(): void
-}) {
-  const [title, setTitle] = useState(initial?.title ?? '')
-  const [date, setDate] = useState(initial?.date ?? todayISO())
-  const [time, setTime] = useState(initial?.time ?? '09:00')
-  const [repeat, setRepeat] = useState<ReminderRepeat>(initial?.repeat ?? 'once')
-  const [category, setCategory] = useState<AreaId>(initial?.category ?? 'mind')
-  const [notes, setNotes] = useState(initial?.notes ?? '')
-  const [priority, setPriority] = useState<ReminderPriority>(initial?.priority ?? 'normal')
-  const [goalId, setGoalId] = useState(initial?.goalId ?? '')
+const STATUS: { id: StatusTab; label: string; icon: typeof Bell }[] = [
+  { id: 'upcoming', label: 'Upcoming', icon: Bell },
+  { id: 'snoozed', label: 'Snoozed', icon: AlarmClock },
+  { id: 'archive', label: 'Done & past', icon: CheckCircle2 },
+]
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) return
-    onSave({ title: title.trim(), date, time, repeat, category, notes: notes.trim(), priority, goalId })
-  }
-
-  const dateLabel = repeat === 'weekly' || repeat === 'monthly' ? 'Starting' : 'Date'
-
-  return (
-    <form onSubmit={submit} className="space-y-4">
-      <div>
-        <label className={labelCls}>Remind me to…</label>
-        <input
-          className={inputCls}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Call Mom"
-          autoFocus
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelCls}>{dateLabel}</label>
-          <input type="date" className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-        <div>
-          <label className={labelCls}>Time</label>
-          <input type="time" className={inputCls} value={time} onChange={(e) => setTime(e.target.value)} />
-        </div>
-      </div>
-      <div>
-        <label className={labelCls}>Repeat</label>
-        <div className="grid grid-cols-4 gap-2">
-          {REPEATS.map((r) => (
-            <button key={r.id} type="button" onClick={() => setRepeat(r.id)} className={segCls(repeat === r.id)}>
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <label className={labelCls}>Priority</label>
-        <div className="grid grid-cols-3 gap-2">
-          {PRIORITIES.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setPriority(p.id)}
-              className={`flex items-center justify-center gap-1 ${segCls(priority === p.id)}`}
-            >
-              {p.id === 'high' && <Flag className="w-3 h-3" strokeWidth={2.4} />}
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <label className={labelCls}>Category</label>
-        <div className="grid grid-cols-3 gap-2">
-          {AREA_LIST.map((a) => (
-            <button key={a.id} type="button" onClick={() => setCategory(a.id)} className={segCls(category === a.id)}>
-              {a.emoji} {a.name}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <label className={labelCls}>Linked goal (optional)</label>
-        <select className={`${inputCls} appearance-none`} value={goalId} onChange={(e) => setGoalId(e.target.value)}>
-          <option value="">— No linked goal —</option>
-          {goals.map((g) => (
-            <option key={g.id} value={g.id}>
-              {AREAS[g.area].emoji} {g.title}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelCls}>Notes (optional)</label>
-        <textarea
-          className={`${inputCls} resize-none`}
-          rows={2}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-      </div>
-      <div className="flex gap-2 pt-1">
-        <Button type="submit">Save reminder</Button>
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </form>
-  )
-}
-
+/**
+ * Reminders page redesigned. Banner with stats up top, a status segmented
+ * control (Upcoming / Snoozed / Done & past), an area chip filter, and the
+ * upcoming list broken into time buckets — Today / Tomorrow / This week /
+ * Later — so the list reads as a calendar rather than one long stack.
+ */
 export function Reminders() {
   const reminders = useReminders((s) => s.reminders)
   const addReminder = useReminders((s) => s.addReminder)
   const updateReminder = useReminders((s) => s.updateReminder)
-  const deleteReminder = useReminders((s) => s.deleteReminder)
-  const toggleDone = useReminders((s) => s.toggleDone)
-  const snoozeReminder = useReminders((s) => s.snoozeReminder)
   const openAssistant = useAssistant((s) => s.setPanelOpen)
   const quietHours = useSettings((s) => s.quietHours)
   const goals = useGoals((s) => s.goals)
-  const linkableGoals = useMemo(() => goals.filter((g) => !g.archivedAt && !g.completedAt), [goals])
+  const linkableGoals = useMemo(
+    () => goals.filter((g) => !g.archivedAt && !g.completedAt),
+    [goals]
+  )
   const goalById = useMemo(() => new Map(goals.map((g) => [g.id, g])), [goals])
 
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Reminder | null>(null)
+  const [statusTab, setStatusTab] = useState<StatusTab>('upcoming')
+  const [areaFilter, setAreaFilter] = useState<AreaId | 'all'>('all')
 
-  const { active, archived } = useMemo(() => {
+  const { upcoming, snoozed, archived } = useMemo(() => {
     const now = new Date()
-    const decorated = reminders.map((r) => ({ r, next: nextFireTime(r, now, quietHours) }))
-    const active = decorated
-      .filter((x): x is { r: Reminder; next: Date } => x.next !== null)
+    const decorated: DecoratedReminder[] = reminders.map((r) => ({
+      r,
+      next: nextFireTime(r, now, quietHours),
+    }))
+    const upcoming = decorated
+      .filter((x): x is { r: Reminder; next: Date } => x.next !== null && !x.r.snoozedUntil)
       .sort(
         (a, b) =>
           Math.floor(a.next.getTime() / 60_000) - Math.floor(b.next.getTime() / 60_000) ||
-          prioRank(a.r) - prioRank(b.r) ||
-          a.next.getTime() - b.next.getTime()
+          prioRank(a.r) - prioRank(b.r)
       )
+    const snoozed = decorated
+      .filter((x): x is { r: Reminder; next: Date } => x.next !== null && !!x.r.snoozedUntil)
+      .sort((a, b) => a.next.getTime() - b.next.getTime())
     const archived = decorated.filter((x) => x.next === null)
-    return { active, archived }
+    return { upcoming, snoozed, archived }
   }, [reminders, quietHours])
 
-  const dueSoonCount = useMemo(() => {
-    const now = Date.now()
-    return active.filter((x) => x.next.getTime() - now <= 2 * 3600_000 && x.next.getTime() >= now).length
-  }, [active])
-
-  const row = (r: Reminder, next: Date | null) => {
-    const area = AREAS[r.category]
-    const overdueNotDone = next === null && r.repeat === 'once' && !r.done
-    const linkedGoal = r.goalId ? goalById.get(r.goalId) : undefined
-    return (
-      <li
-        key={r.id}
-        className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
-          r.done ? 'border-border/50 bg-surface/40 opacity-60' : 'border-border bg-surface2/30'
-        }`}
-      >
-        <button
-          onClick={() => toggleDone(r.id)}
-          className={`shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] ${
-            r.done ? 'bg-accent border-accent text-bg' : 'border-border text-transparent hover:border-accent'
-          }`}
-          title={r.done ? 'Mark not done' : 'Mark done'}
-        >
-          ✓
-        </button>
-        <span className="shrink-0 w-1.5 h-9 rounded-full" style={{ background: `rgb(var(--${area.color}))` }} />
-        <button onClick={() => setEditing(r)} className="min-w-0 flex-1 text-left">
-          <div className={`text-sm truncate flex items-center gap-1.5 ${r.done ? 'line-through text-muted' : 'text-text'}`}>
-            {r.priority === 'high' && <Flag className="w-3 h-3 shrink-0 text-red-400" strokeWidth={2.4} />}
-            <span className="truncate">{r.title}</span>
-          </div>
-          <div className="text-[11px] text-muted flex items-center gap-1.5 flex-wrap">
-            <Clock className="w-3 h-3" />
-            {next
-              ? format(next, "EEE, MMM d 'at' h:mm a")
-              : `${format(parseISO(r.date), 'MMM d')} ${r.time}${overdueNotDone ? ' · passed' : ''}`}
-            <span className="text-muted/40">·</span>
-            {area.name}
-            {r.repeat !== 'once' && (
-              <span className="inline-flex items-center gap-0.5">
-                <span className="text-muted/40">·</span>
-                <RotateCw className="w-3 h-3" />
-                {r.repeat}
-              </span>
-            )}
-            {r.snoozedUntil && <span className="text-accent2/70">· snoozed</span>}
-            {linkedGoal && (
-              <span className="inline-flex items-center gap-0.5 text-accent2/80">
-                <span className="text-muted/40">·</span>
-                <Target className="w-3 h-3" />
-                {linkedGoal.title}
-              </span>
-            )}
-            {r.source === 'assistant' && <span className="text-accent2/80">· ★ assistant</span>}
-          </div>
-        </button>
-        <button
-          onClick={() => snoozeReminder(r.id)}
-          className="shrink-0 p-1.5 rounded-lg text-muted hover:text-accent hover:bg-surface2/50"
-          title="Snooze 10 min"
-        >
-          <AlarmClock className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => deleteReminder(r.id)}
-          className="shrink-0 p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-surface2/50"
-          title="Delete"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </li>
-    )
+  const tabCounts: Record<StatusTab, number> = {
+    upcoming: upcoming.length,
+    snoozed: snoozed.length,
+    archive: archived.length,
   }
+
+  const pool: DecoratedReminder[] =
+    statusTab === 'upcoming' ? upcoming : statusTab === 'snoozed' ? snoozed : archived
+
+  const filteredPool =
+    areaFilter === 'all' ? pool : pool.filter((x) => x.r.category === areaFilter)
+
+  const groups = useMemo(() => buildGroups(filteredPool, statusTab), [filteredPool, statusTab])
+
+  const handleSave = (v: ReminderFormDraft, id?: string) => {
+    if (id) {
+      updateReminder(id, {
+        title: v.title,
+        date: v.date,
+        time: v.time,
+        repeat: v.repeat,
+        category: v.category,
+        notes: v.notes || undefined,
+        priority: v.priority,
+        goalId: v.goalId || undefined,
+        lastFiredOn: undefined,
+        snoozedUntil: undefined,
+        done: false,
+      })
+    } else {
+      addReminder({
+        title: v.title,
+        date: v.date,
+        time: v.time,
+        repeat: v.repeat,
+        category: v.category,
+        notes: v.notes || undefined,
+        priority: v.priority,
+        goalId: v.goalId || undefined,
+        source: 'manual',
+      })
+    }
+    setAdding(false)
+    setEditing(null)
+  }
+
+  const isEmpty = reminders.length === 0
+  const dueSoonNow = upcoming.filter(
+    (x) => x.next.getTime() - Date.now() <= 2 * 3600_000 && x.next.getTime() >= Date.now()
+  ).length
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <header className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-3xl tracking-wide">Reminders</h1>
           <p className="text-sm text-muted mt-1">
-            Desktop pings at the right moment.{' '}
-            {dueSoonCount > 0 ? (
-              <span className="text-accent">{dueSoonCount} in the next 2 hours.</span>
-            ) : (
-              'Nothing imminent.'
-            )}
-            {quietHours && (
-              <span className="text-muted"> Quiet {quietHours.from}–{quietHours.to}.</span>
-            )}
+            {isEmpty
+              ? 'Set the kind of pings you want — desktop or in-app.'
+              : dueSoonNow > 0
+                ? <>Desktop pings at the right moment. <span className="text-accent">{dueSoonNow} in the next 2 hours.</span></>
+                : 'Desktop pings at the right moment. Nothing imminent.'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -294,9 +150,11 @@ export function Reminders() {
             New reminder
           </Button>
         </div>
-      </div>
+      </header>
 
-      {active.length === 0 && archived.length === 0 ? (
+      {!isEmpty && <RemindersBanner />}
+
+      {isEmpty ? (
         <Empty
           icon={Bell}
           title="No reminders yet."
@@ -305,17 +163,108 @@ export function Reminders() {
         />
       ) : (
         <>
-          {active.length > 0 && (
-            <Card className="p-4">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-muted mb-3 px-1">Upcoming</div>
-              <ul className="space-y-2">{active.map((x) => row(x.r, x.next))}</ul>
-            </Card>
-          )}
-          {archived.length > 0 && (
-            <Card className="p-4">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-muted mb-3 px-1">Done &amp; past</div>
-              <ul className="space-y-2">{archived.map((x) => row(x.r, x.next))}</ul>
-            </Card>
+          {/* Status segmented control */}
+          <div className="-mx-1 px-1 overflow-x-auto">
+            <div
+              role="tablist"
+              aria-label="Reminder status"
+              className="inline-flex p-1 rounded-xl bg-surface2/50 border border-border/10 gap-0.5"
+            >
+              {STATUS.map((t) => {
+                const Icon = t.icon
+                const active = statusTab === t.id
+                const count = tabCounts[t.id]
+                return (
+                  <button
+                    key={t.id}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setStatusTab(t.id)}
+                    className={`px-3 h-9 rounded-lg text-sm transition-colors duration-80 flex items-center gap-1.5 whitespace-nowrap ${
+                      active
+                        ? 'bg-accent text-white font-semibold shadow-card'
+                        : 'text-muted hover:text-text'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" strokeWidth={active ? 2.2 : 1.8} />
+                    {t.label}
+                    {count > 0 && (
+                      <span
+                        className={`text-[10px] px-1 rounded-full font-bold ${
+                          active ? 'bg-white/25 text-white' : 'bg-surface2 text-muted'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Area chips */}
+          <div className="flex gap-1.5 items-center flex-wrap">
+            <span className="text-[10px] uppercase tracking-wider text-muted mr-1 inline-flex items-center gap-1">
+              <Filter className="w-3 h-3" />
+              Area
+            </span>
+            <AreaChip
+              active={areaFilter === 'all'}
+              onClick={() => setAreaFilter('all')}
+              label="All"
+            />
+            {AREA_LIST.map((a) => {
+              const Icon = AREA_ICONS[a.id]
+              const count = pool.filter((x) => x.r.category === a.id).length
+              if (count === 0 && areaFilter !== a.id) return null
+              return (
+                <AreaChip
+                  key={a.id}
+                  active={areaFilter === a.id}
+                  onClick={() => setAreaFilter(a.id)}
+                  label={a.name}
+                  icon={Icon}
+                  color={a.color}
+                  count={count}
+                />
+              )
+            })}
+          </div>
+
+          {filteredPool.length === 0 ? (
+            <div className="rounded-2xl border border-border/10 bg-surface shadow-card p-6 text-center text-sm text-muted">
+              {statusTab === 'snoozed'
+                ? 'Nothing snoozed right now.'
+                : statusTab === 'archive'
+                  ? "Quiet hall. Past and done reminders will collect here."
+                  : 'Nothing in this filter. Try another area or add a new reminder.'}
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {groups.map((g) => (
+                <section
+                  key={g.id}
+                  className="rounded-2xl border border-border/10 bg-surface shadow-card p-4"
+                >
+                  <div className="text-[10px] uppercase tracking-[0.28em] text-muted mb-3 px-1 flex items-center justify-between">
+                    <span>{g.label}</span>
+                    <span className="text-muted/70 tabular-nums">{g.items.length}</span>
+                  </div>
+                  <ul className="space-y-2">
+                    {g.items.map(({ r, next }) => (
+                      <ReminderRow
+                        key={r.id}
+                        reminder={r}
+                        next={next}
+                        goal={r.goalId ? goalById.get(r.goalId) : undefined}
+                        onOpen={setEditing}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
           )}
         </>
       )}
@@ -323,45 +272,16 @@ export function Reminders() {
       <Modal open={adding} onClose={() => setAdding(false)} title="New reminder" size="sm">
         <ReminderForm
           goals={linkableGoals}
-          onSave={(v) => {
-            addReminder({
-              title: v.title,
-              date: v.date,
-              time: v.time,
-              repeat: v.repeat,
-              category: v.category,
-              notes: v.notes || undefined,
-              priority: v.priority,
-              goalId: v.goalId || undefined,
-              source: 'manual',
-            })
-            setAdding(false)
-          }}
+          onSave={(v) => handleSave(v)}
           onCancel={() => setAdding(false)}
         />
       </Modal>
-
       <Modal open={editing !== null} onClose={() => setEditing(null)} title="Edit reminder" size="sm">
         {editing && (
           <ReminderForm
             initial={editing}
             goals={linkableGoals}
-            onSave={(v) => {
-              updateReminder(editing.id, {
-                title: v.title,
-                date: v.date,
-                time: v.time,
-                repeat: v.repeat,
-                category: v.category,
-                notes: v.notes || undefined,
-                priority: v.priority,
-                goalId: v.goalId || undefined,
-                lastFiredOn: undefined,
-                snoozedUntil: undefined,
-                done: false,
-              })
-              setEditing(null)
-            }}
+            onSave={(v) => handleSave(v, editing.id)}
             onCancel={() => setEditing(null)}
           />
         )}
@@ -369,3 +289,81 @@ export function Reminders() {
     </div>
   )
 }
+
+interface Group {
+  id: string
+  label: string
+  items: DecoratedReminder[]
+}
+
+function buildGroups(pool: DecoratedReminder[], status: StatusTab): Group[] {
+  if (status === 'archive') return [{ id: 'all', label: 'Done & past', items: pool }]
+  if (status === 'snoozed') return [{ id: 'all', label: 'Snoozed', items: pool }]
+
+  const now = new Date()
+  const startOfToday = new Date(`${todayISO()}T00:00:00`)
+  const endOfToday = new Date(`${todayISO()}T23:59:59`)
+  const endOfTomorrow = new Date(endOfToday.getTime() + 86_400_000)
+  const endOfWeek = addDays(startOfToday, 7)
+
+  const today: DecoratedReminder[] = []
+  const tomorrow: DecoratedReminder[] = []
+  const week: DecoratedReminder[] = []
+  const later: DecoratedReminder[] = []
+  for (const x of pool) {
+    const next = x.next!
+    if (isBefore(next, endOfToday)) today.push(x)
+    else if (isBefore(next, endOfTomorrow)) tomorrow.push(x)
+    else if (isBefore(next, endOfWeek)) week.push(x)
+    else if (isAfter(next, endOfWeek)) later.push(x)
+  }
+  const groups: Group[] = []
+  if (today.length) groups.push({ id: 'today', label: 'Today', items: today })
+  if (tomorrow.length) groups.push({ id: 'tomorrow', label: 'Tomorrow', items: tomorrow })
+  if (week.length) groups.push({ id: 'week', label: 'This week', items: week })
+  if (later.length) groups.push({ id: 'later', label: 'Later', items: later })
+  // Silence unused-import warning by referencing `now` once.
+  void now
+  return groups
+}
+
+function AreaChip({
+  active,
+  onClick,
+  label,
+  icon: Icon,
+  color,
+  count,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+  icon?: typeof Bell
+  color?: string
+  count?: number
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2.5 h-7 rounded-full text-xs border transition-colors duration-80 inline-flex items-center gap-1.5 ${
+        active
+          ? 'border-transparent text-white font-semibold'
+          : 'border-border/40 bg-surface2/40 text-muted hover:text-text'
+      }`}
+      style={
+        active && color
+          ? { background: `rgb(var(--${color}))` }
+          : active
+            ? { background: 'rgb(var(--accent))' }
+            : undefined
+      }
+    >
+      {Icon && <Icon className="w-3.5 h-3.5" strokeWidth={1.8} />}
+      {label}
+      {count !== undefined && count > 0 && (
+        <span className={`text-[10px] ${active ? 'opacity-90' : 'text-muted/60'}`}>{count}</span>
+      )}
+    </button>
+  )
+}
+
