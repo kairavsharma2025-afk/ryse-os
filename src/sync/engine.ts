@@ -174,6 +174,12 @@ export function bootstrapSync(userId: string): Promise<BootstrapResult> {
  */
 export async function pullRemote(): Promise<string[]> {
   if (!syncEnabled()) return []
+  // Push any pending local edits up first, so a same-second focus pull doesn't
+  // wipe a fresh local write the user just made (they'd get the older server
+  // version back). flushNow handles its own in-flight gate.
+  if (pushTimer || dirty.size > 0) {
+    await flushNow()
+  }
   if (inFlight) return []
   inFlight = true
   useSync.getState().setPhase('syncing')

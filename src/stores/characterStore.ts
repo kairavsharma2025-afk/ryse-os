@@ -96,10 +96,22 @@ export const useCharacter = create<CharacterState>((set, get) => ({
   recordOpened: () => {
     const today = todayISO()
     const cur = get()
-    if (!cur.daysOpened.includes(today)) {
+    const todayLogged = cur.daysOpened.includes(today)
+    const sameDay = cur.lastOpenedAt === today
+    // Skip the persist when nothing meaningful has changed — otherwise every
+    // page load bumps the character timestamp and the device that opens last
+    // wins last-write-wins, clobbering real XP/level changes from the other
+    // device. `grantShieldsIfNewMonth` is itself idempotent within a month.
+    if (todayLogged && sameDay) {
+      get().grantShieldsIfNewMonth()
+      return
+    }
+    if (!todayLogged) {
       set({ daysOpened: [...cur.daysOpened, today].slice(-365) })
     }
-    set({ lastOpenedAt: today })
+    if (!sameDay) {
+      set({ lastOpenedAt: today })
+    }
     get().grantShieldsIfNewMonth()
     persist(get())
   },

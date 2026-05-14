@@ -1,6 +1,6 @@
 /* Ryse — minimal service worker: app-shell offline + runtime asset cache.
    Bump CACHE when you want every client to drop its old cached assets. */
-const CACHE = 'ryse-v1'
+const CACHE = 'ryse-v2'
 const APP_SHELL = ['/', '/index.html', '/icon.svg', '/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {
