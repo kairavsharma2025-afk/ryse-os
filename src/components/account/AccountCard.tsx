@@ -1,24 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
-import { Cloud, Copy, Check, RotateCw, X as XIcon } from 'lucide-react'
+import { Cloud, Copy, Check, RotateCw, X as XIcon, LogOut, User } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import {
   apiCreatePairing,
   apiRedeemPairing,
+  apiSignOut,
   bootstrapSync,
-  getSyncUserId,
-  setSyncUserId,
+  getSyncEmail,
+  setSyncIdentity,
   useSync,
   type PairingCode,
 } from '@/sync'
-import { forgetOwner } from '@/sync'
 
 function SyncStatus() {
   const enabled = useSync((s) => s.enabled)
   const phase = useSync((s) => s.phase)
   const lastSyncedAt = useSync((s) => s.lastSyncedAt)
   const error = useSync((s) => s.error)
-  const userLabel = useSync((s) => s.userLabel)
 
   if (!enabled) return null
 
@@ -29,17 +28,10 @@ function SyncStatus() {
   let line: React.ReactNode
   if (phase === 'syncing') line = 'Syncing…'
   else if (phase === 'error')
-    line = (
-      <span className="text-red-400">Sync error{error ? `: ${error}` : ''}</span>
-    )
+    line = <span className="text-red-400">Sync error{error ? `: ${error}` : ''}</span>
   else line = when ? `Synced at ${when}` : 'Sync ready'
 
-  return (
-    <p className="text-xs text-muted leading-relaxed">
-      {line}
-      {userLabel ? <span className="text-muted/70"> · {userLabel}</span> : null}
-    </p>
-  )
+  return <p className="text-xs text-muted leading-relaxed">{line}</p>
 }
 
 function formatMmSs(sec: number): string {
@@ -49,9 +41,9 @@ function formatMmSs(sec: number): string {
 }
 
 export function AccountCard() {
-  const userId = useSync((s) => (s.enabled ? getSyncUserId() : null))
+  const signedIn = useSync((s) => s.enabled)
+  const email = getSyncEmail()
 
-  // Pairing flow state — only one of these is active at a time.
   const [mode, setMode] = useState<'idle' | 'create' | 'enter'>('idle')
   const [pairing, setPairing] = useState<PairingCode | null>(null)
   const [remaining, setRemaining] = useState(0)
@@ -61,7 +53,6 @@ export function AccountCard() {
   const [copied, setCopied] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Countdown for the displayed pairing code.
   useEffect(() => {
     if (!pairing) {
       setRemaining(0)
@@ -90,13 +81,6 @@ export function AccountCard() {
     setError(null)
     try {
       const p = await apiCreatePairing()
-      // Register THIS device as paired immediately so the sync engine pushes
-      // every existing local store (character/XP/level, goals, modules, …) up
-      // to the server. Then wait for that push to land — otherwise the other
-      // device can redeem the code and pull an empty account.
-      const firstTimePairing = !getSyncUserId()
-      if (firstTimePairing) setSyncUserId(p.userId)
-      await bootstrapSync(p.userId)
       setPairing(p)
       setMode('create')
     } catch (e) {
@@ -115,10 +99,14 @@ export function AccountCard() {
     setBusy(true)
     setError(null)
     try {
-      const remoteUserId = await apiRedeemPairing(trimmed)
-      setSyncUserId(remoteUserId)
-      setMode('idle')
-      setCode('')
+      const identity = await apiRedeemPairing(trimmed)
+      setSyncIdentity(identity)
+      try {
+        await bootstrapSync(identity.userId)
+      } catch {
+        /* offline */
+      }
+      window.location.reload()
     } catch (e) {
       setError((e as Error).message || 'Failed to redeem code')
     } finally {
@@ -133,86 +121,78 @@ export function AccountCard() {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
-      /* clipboard blocked — user can read the digits */
+      /* clipboard blocked */
     }
   }
 
-  const disconnect = () => {
-    if (!confirm('Stop syncing this device? Your data stays here — but new changes stop being mirrored.')) return
-    setSyncUserId(null)
-    forgetOwner()
+  const signOut = async () => {
+    if (
+      !confirm(
+        'Sign out of this device? Your data stays on the server — sign in again on any device to pick it up.'
+      )
+    )
+      return
+    await apiSignOut()
+    window.location.reload()
   }
 
   return (
     <Card className="p-5">
       <div className="flex items-center gap-2 mb-3">
         <Cloud className="w-5 h-5 text-accent" strokeWidth={1.8} />
-        <h3 className="font-display text-lg">Cross-device sync</h3>
-        {userId && (
+        <h3 className="font-display text-lg">Account</h3>
+        {signedIn && (
           <span className="ml-auto text-[11px] font-medium px-2 py-0.5 rounded-full border border-accent/40 bg-accent/10 text-accent2">
-            ● Paired
+            ● Signed in
           </span>
         )}
       </div>
 
-      {userId ? (
+      {signedIn ? (
         <>
+          <div className="flex items-center gap-2 mb-2">
+            <User className="w-4 h-4 text-accent2" strokeWidth={1.8} />
+            <span className="text-sm text-text">{email ?? 'Signed in'}</span>
+          </div>
           <SyncStatus />
           <p className="text-xs text-muted/80 leading-relaxed mt-3">
-            Your character, goals, schedule, reminders and everything else are mirrored to this
-            account so you can continue on another device. Tap{' '}
-            <span className="text-text">Get a sync code</span> on this device to add another, or{' '}
-            <span className="text-text">Enter a sync code</span> to switch this device to a code
-            from somewhere else.
+            Your character, goals, schedule, reminders and progress are mirrored to your
+            account. Sign in on any device to pick up where you left off, or generate a
+            6-digit code to add another device without typing your password.
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-4">
             <Button variant="ghost" size="sm" onClick={createCode} disabled={busy}>
               <RotateCw className="w-3.5 h-3.5" />
-              Get a sync code
+              Add another device
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setMode('enter')} disabled={busy}>
-              Enter a sync code
-            </Button>
-            <Button variant="subtle" size="sm" onClick={disconnect}>
-              Disconnect
+            <Button variant="subtle" size="sm" onClick={signOut}>
+              <LogOut className="w-3.5 h-3.5" />
+              Sign out
             </Button>
           </div>
         </>
       ) : (
         <>
           <p className="text-sm text-text/90 leading-relaxed mb-3">
-            Sync your character, goals, and progress across every device — phone, laptop, tablet.
-            No account, no password: pair a device by code.
+            Sign in to sync your character, goals, and progress across every device.
           </p>
           {mode === 'idle' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                onClick={createCode}
-                disabled={busy}
-                className="rounded-xl border border-accent/40 bg-gradient-to-br from-accent/10 to-accent2/5 hover:from-accent/15 hover:to-accent2/10 p-4 text-left transition disabled:opacity-50"
-              >
-                <div className="font-display text-base text-text mb-1">Get a sync code</div>
-                <div className="text-[11px] text-muted leading-relaxed">
-                  Use this on the first device. We&apos;ll give you a 6-digit code to type on the
-                  next one.
-                </div>
-              </button>
-              <button
-                onClick={() => setMode('enter')}
-                disabled={busy}
-                className="rounded-xl border border-border bg-surface2/40 hover:border-accent/40 p-4 text-left transition disabled:opacity-50"
-              >
-                <div className="font-display text-base text-text mb-1">Enter a sync code</div>
-                <div className="text-[11px] text-muted leading-relaxed">
-                  Use this on the second device. Type the code from your first device.
-                </div>
-              </button>
-            </div>
+            <button
+              onClick={() => setMode('enter')}
+              disabled={busy}
+              className="rounded-xl border border-border bg-surface2/40 hover:border-accent/40 p-4 text-left transition disabled:opacity-50 w-full"
+            >
+              <div className="font-display text-base text-text mb-1">
+                Enter a sync code
+              </div>
+              <div className="text-[11px] text-muted leading-relaxed">
+                Sign in here by entering a 6-digit code from another signed-in device.
+              </div>
+            </button>
           )}
         </>
       )}
 
-      {/* Show generated code */}
       {mode === 'create' && pairing && (
         <div className="mt-4 rounded-xl border border-accent/40 bg-accent/5 p-4">
           <div className="flex items-center justify-between mb-2">
@@ -259,7 +239,6 @@ export function AccountCard() {
         </div>
       )}
 
-      {/* Enter code form */}
       {mode === 'enter' && (
         <div className="mt-4 rounded-xl border border-border bg-surface2/40 p-4">
           <div className="flex items-center justify-between mb-2">

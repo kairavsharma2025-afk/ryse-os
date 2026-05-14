@@ -1,12 +1,10 @@
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { bootstrapSync, pullRemote } from './engine'
-import { getSyncUserId } from './client'
+import { getSyncEmail, getSyncToken, getSyncUserId } from './client'
 import { useSync } from './syncStore'
 
 const POLL_INTERVAL_MS = 30_000
-
-const shortLabel = (id: string): string => `device · ${id.slice(0, 4)}…${id.slice(-4)}`
 
 /**
  * Watches the paired sync user id in localStorage and runs the sync engine
@@ -26,8 +24,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     function reconcile() {
       const userId = getSyncUserId()
-      if (userId) {
-        useSync.getState().setEnabled(true, shortLabel(userId))
+      const token = getSyncToken()
+      if (userId && token) {
+        useSync.getState().setEnabled(true, getSyncEmail() ?? userId.slice(0, 8))
 
         const preBootstrapped =
           (window as unknown as { __ryseBootstrappedUserId?: string }).__ryseBootstrappedUserId ===
@@ -64,7 +63,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     let pulling = false
     async function pullIfPaired() {
       if (pulling) return
-      if (!getSyncUserId()) return
+      if (!getSyncUserId() || !getSyncToken()) return
       pulling = true
       try {
         const changed = await pullRemote()

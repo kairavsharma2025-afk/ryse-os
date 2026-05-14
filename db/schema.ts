@@ -1,4 +1,23 @@
-import { pgTable, text, jsonb, integer, timestamp, primaryKey, index } from 'drizzle-orm/pg-core'
+import { pgTable, text, jsonb, integer, timestamp, primaryKey, index, uniqueIndex } from 'drizzle-orm/pg-core'
+
+/**
+ * Email/password user accounts. `id` is the same uuid string used as `user_state.user_id`,
+ * so the existing per-user blob rows attach to it without any migration step.
+ */
+export const users = pgTable(
+  'users',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    passwordHash: text('password_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    byEmail: uniqueIndex('users_email_idx').on(t.email),
+  })
+)
+
+export type UserRow = typeof users.$inferSelect
 
 /**
  * One row per (Clerk user, localStorage store key).

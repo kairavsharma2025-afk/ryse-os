@@ -10,7 +10,7 @@
 //
 // All of this is best-effort: any failure leaves the local-first app fully usable.
 
-import { apiDeleteState, apiGetState, apiPutState, syncEnabled } from './client'
+import { apiDeleteState, apiGetState, apiPutState, setSyncIdentity, syncEnabled } from './client'
 import {
   clearOwner,
   getKeyTimestamp,
@@ -77,6 +77,7 @@ async function flushDirty(): Promise<void> {
     useSync.getState().markSynced()
   } catch (err) {
     for (const k of keys) dirty.add(k) // retry on the next change / push tick
+    handleAuthFailure(err)
     useSync.getState().setError(errMessage(err))
   } finally {
     inFlight = false
@@ -154,7 +155,8 @@ export function bootstrapSync(userId: string): Promise<BootstrapResult> {
       useSync.getState().markSynced()
       return { changedKeys, wipedLocal, ok: true }
     } catch (err) {
-      useSync.getState().setError(errMessage(err))
+      handleAuthFailure(err)
+    useSync.getState().setError(errMessage(err))
       return { changedKeys, wipedLocal, ok: false }
     } finally {
       inFlight = false
@@ -201,6 +203,7 @@ export async function pullRemote(): Promise<string[]> {
     }
     useSync.getState().markSynced()
   } catch (err) {
+    handleAuthFailure(err)
     useSync.getState().setError(errMessage(err))
   } finally {
     inFlight = false
@@ -243,4 +246,16 @@ export { getKeyTimestamp }
 function errMessage(err: unknown): string {
   if (err instanceof Error) return err.message
   return String(err)
+}
+
+/**
+ * If the server rejected our JWT (expired / signed with a different secret),
+ * sign the device out so the SignIn screen appears on the next render and the
+ * user can re-authenticate. No-op for any other error.
+ */
+function handleAuthFailure(err: unknown): void {
+  const msg = errMessage(err).toLowerCase()
+  if (msg === 'unauthorized') {
+    setSyncIdentity(null)
+  }
 }

@@ -12,8 +12,13 @@ export {
 export {
   syncEnabled,
   getSyncUserId,
-  setSyncUserId,
+  getSyncToken,
+  getSyncEmail,
+  setSyncIdentity,
   apiCreatePairing,
   apiRedeemPairing,
+  apiSignUp,
+  apiSignIn,
+  apiSignOut,
 } from './client'
-export type { PairingCode } from './client'
+export type { PairingCode, SignedInIdentity } from './client'

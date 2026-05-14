@@ -1,16 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { and, eq, lt, sql } from 'drizzle-orm'
-import { randomUUID } from 'node:crypto'
+import { SignJWT } from 'jose'
 import { db } from '../db/client.js'
-import { syncPairing } from '../db/schema.js'
+import { syncPairing, users } from '../db/schema.js'
+import { verifyBearer } from './_lib/auth.js'
 
 const CODE_TTL_MS = 10 * 60_000 // 10 minutes
+const TOKEN_TTL = '30d'
 
 function newPairingCode(): string {
-  // 6-digit zero-padded numeric code, easy to read aloud.
-  return Math.floor(Math.random() * 1_000_000)
-    .toString()
-    .padStart(6, '0')
+  return Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0')
 }
 
 async function gcExpired(): Promise<void> {
@@ -19,6 +18,23 @@ async function gcExpired(): Promise<void> {
   } catch {
     /* best-effort */
   }
+}
+
+function authSecret(): Uint8Array {
+  const v = process.env.AUTH_SECRET
+  if (!v || v.length < 32) {
+    throw new Error('AUTH_SECRET env var is missing or shorter than 32 chars')
+  }
+  return new TextEncoder().encode(v)
+}
+
+async function signToken(userId: string, email: string): Promise<string> {
+  return await new SignJWT({ email })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setSubject(userId)
+    .setIssuedAt()
+    .setExpirationTime(TOKEN_TTL)
+    .sign(authSecret())
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -31,43 +47,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const body = (req.body ?? {}) as { action?: unknown; code?: unknown; userId?: unknown }
+  const body = (req.body ?? {}) as { action?: unknown; code?: unknown }
   const action = typeof body.action === 'string' ? body.action : ''
 
   try {
     if (action === 'create') {
+      // Only a signed-in user can mint a code; the code links to their account.
+      const session = await verifyBearer(req)
+      if (!session) {
+        res.status(401).json({ error: 'unauthorized' })
+        return
+      }
       await gcExpired()
 
-      // If the caller already has a user_id (they're sharing it from device A),
-      // reuse it; otherwise mint a fresh one.
-      const incomingUserId = typeof body.userId === 'string' ? body.userId.trim().toLowerCase() : ''
-      const userId =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(incomingUserId)
-          ? incomingUserId
-          : randomUUID()
-
-      // Tiny collision-retry loop on the 6-digit code.
       let code = ''
       for (let attempt = 0; attempt < 10; attempt++) {
         const candidate = newPairingCode()
         try {
           await db.insert(syncPairing).values({
             code: candidate,
-            userId,
+            userId: session.userId,
             expiresAt: new Date(Date.now() + CODE_TTL_MS),
           })
           code = candidate
           break
         } catch {
-          // PK collision — try again
+          // PK collision — retry
         }
       }
       if (!code) {
         res.status(503).json({ error: 'could not allocate code' })
         return
       }
-
-      res.status(200).json({ code, userId, expiresInSec: Math.floor(CODE_TTL_MS / 1000) })
+      res.status(200).json({ code, expiresInSec: Math.floor(CODE_TTL_MS / 1000) })
       return
     }
 
@@ -78,18 +90,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return
       }
 
-      // Single-use: read the live row, then delete it. Use a delete-returning so
-      // there's no race between two devices entering the same code at once.
+      // Single-use, race-safe: delete-returning so two devices entering the same
+      // code at once can't both succeed.
       const rows = await db
         .delete(syncPairing)
         .where(and(eq(syncPairing.code, code), sql`${syncPairing.expiresAt} > now()`))
         .returning({ userId: syncPairing.userId })
-
       if (rows.length === 0) {
         res.status(404).json({ error: 'expired or unknown code' })
         return
       }
-      res.status(200).json({ userId: rows[0].userId })
+      const userId = rows[0].userId
+
+      // Look up the user's email so we can hand back a valid JWT for them.
+      const u = await db.select({ email: users.email }).from(users).where(eq(users.id, userId)).limit(1)
+      if (u.length === 0) {
+        // Orphaned pairing row (e.g. user deleted their account). Treat as expired.
+        res.status(404).json({ error: 'expired or unknown code' })
+        return
+      }
+      const token = await signToken(userId, u[0].email)
+      res.status(200).json({ userId, email: u[0].email, token })
       return
     }
 
