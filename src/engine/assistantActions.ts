@@ -9,7 +9,8 @@ import { useSchedule } from '@/stores/scheduleStore'
 import { useNotifications } from '@/stores/notificationsStore'
 import { nowISO, todayISO } from './dates'
 import { AREA_IDS } from '@/types'
-import type { AreaId, ReminderRepeat } from '@/types'
+import type { ActionReceipt, AreaId, ReminderRepeat } from '@/types'
+import { format, parseISO } from 'date-fns'
 
 const PERSONA = `You are the Game Master of "Ryse" — a gamified personal-life RPG where the user is the Hero and real life is the longest game. Speak in a warm, grounded, lightly mythic game-master voice: second person, short and punchy. Use a little game language — "Your mission today:", "Boss battle incoming:", "XP awaits.", "Level up." — sparingly, never cheesy. You are a proactive personal assistant and planner: don't just answer questions, suggest what the Hero should do today, this week, and this season, anchored to their real schedule, goals, ritual, and season focus. Be concise — a few short paragraphs or a tight list. Use markdown lightly (bold, bullets). Never claim to have done something you can't (you can't browse the web or send real messages), but you CAN create reminders and calendar events via the action block below.`
 
@@ -70,18 +71,20 @@ const isHm = (v: unknown): v is string => typeof v === 'string' && /^\d{1,2}:\d{
 const isYmd = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)
 const pad = (s: string) => (s.length === 4 ? '0' + s : s)
 
-function applyActions(actions: RawAction[]): number {
-  let n = 0
+function applyActions(actions: RawAction[]): ActionReceipt[] {
+  const receipts: ActionReceipt[] = []
   for (const a of actions) {
     if (!a || typeof a !== 'object') continue
     const category = asArea(a.category)
     const notes = typeof a.notes === 'string' && a.notes.trim() ? a.notes.trim() : undefined
     if (a.type === 'reminder' && typeof a.title === 'string' && isYmd(a.date) && isHm(a.time)) {
       const repeat = asRepeat(a.repeat)
+      const title = a.title.trim()
+      const time = pad(a.time)
       useReminders.getState().addReminder({
-        title: a.title.trim(),
+        title,
         date: a.date,
-        time: pad(a.time),
+        time,
         repeat,
         category,
         notes,
@@ -90,12 +93,17 @@ function applyActions(actions: RawAction[]): number {
       useNotifications.getState().push({
         type: 'system',
         title: 'Reminder set',
-        body: `${a.title.trim()} — ${a.date} at ${pad(a.time)}${repeat !== 'once' ? ` · ${repeat}` : ''}`,
+        body: `${title} — ${a.date} at ${time}${repeat !== 'once' ? ` · ${repeat}` : ''}`,
         emoji: '⏰',
         ctaLabel: 'Reminders',
         ctaPath: '/reminders',
       })
-      n++
+      receipts.push({
+        kind: 'reminder',
+        title,
+        when: `${format(parseISO(a.date), 'EEE MMM d')} · ${time}${repeat !== 'once' ? ` · ${repeat}` : ''}`,
+        category,
+      })
     } else if (
       a.type === 'event' &&
       typeof a.title === 'string' &&
@@ -103,11 +111,14 @@ function applyActions(actions: RawAction[]): number {
       isHm(a.startTime) &&
       isHm(a.endTime)
     ) {
+      const title = a.title.trim()
+      const startTime = pad(a.startTime)
+      const endTime = pad(a.endTime)
       useSchedule.getState().addEvent({
-        title: a.title.trim(),
+        title,
         date: a.date,
-        startTime: pad(a.startTime),
-        endTime: pad(a.endTime),
+        startTime,
+        endTime,
         category,
         notes,
         source: 'assistant',
@@ -115,15 +126,20 @@ function applyActions(actions: RawAction[]): number {
       useNotifications.getState().push({
         type: 'system',
         title: 'Added to your schedule',
-        body: `${a.title.trim()} — ${a.date}, ${pad(a.startTime)}–${pad(a.endTime)}`,
+        body: `${title} — ${a.date}, ${startTime}–${endTime}`,
         emoji: '📅',
         ctaLabel: 'Schedule',
         ctaPath: '/schedule',
       })
-      n++
+      receipts.push({
+        kind: 'event',
+        title,
+        when: `${format(parseISO(a.date), 'EEE MMM d')} · ${startTime}–${endTime}`,
+        category,
+      })
     }
   }
-  return n
+  return receipts
 }
 
 function recentHistory(): ClaudeMessage[] {
@@ -158,8 +174,8 @@ export async function askAssistant(userText: string): Promise<void> {
     const system = `${PERSONA}\n\n${ACTION_INSTRUCTIONS}\n\n${buildAssistantContext()}`
     const reply = await callClaude({ system, messages: recentHistory(), maxTokens: 1200 })
     const { clean, actions } = parseAndStrip(reply)
-    useAssistant.getState().addMessage('assistant', clean)
-    if (actions.length) applyActions(actions)
+    const receipts = actions.length ? applyActions(actions) : []
+    useAssistant.getState().addMessage('assistant', clean, receipts.length ? receipts : undefined)
   } catch (e) {
     useAssistant.getState().setError((e as Error).message)
   } finally {

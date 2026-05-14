@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ChatMessage, ChatRole, DailyPlan } from '@/types'
+import type { ActionReceipt, ChatMessage, ChatRole, DailyPlan } from '@/types'
 import { loadJSON, saveJSON } from './persist'
 import { nowISO } from '@/engine/dates'
 
@@ -17,7 +17,7 @@ interface AssistantState {
   setThinking(v: boolean): void
   setPlanLoading(v: boolean): void
   setError(e?: string): void
-  addMessage(role: ChatRole, content: string): ChatMessage
+  addMessage(role: ChatRole, content: string, actions?: ActionReceipt[]): ChatMessage
   setPlan(plan: DailyPlan): void
   clearChat(): void
 }
@@ -46,8 +46,14 @@ export const useAssistant = create<AssistantState>((set, get) => ({
   setPlanLoading: (v) => set({ planLoading: v }),
   setError: (e) => set({ error: e }),
 
-  addMessage: (role, content) => {
-    const m: ChatMessage = { id: crypto.randomUUID(), role, content, createdAt: nowISO() }
+  addMessage: (role, content, actions) => {
+    const m: ChatMessage = {
+      id: crypto.randomUUID(),
+      role,
+      content,
+      createdAt: nowISO(),
+      ...(actions && actions.length ? { actions } : {}),
+    }
     set({ messages: [...get().messages, m] })
     persistMsgs(get())
     return m

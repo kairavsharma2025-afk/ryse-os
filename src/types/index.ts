@@ -475,11 +475,29 @@ export interface Birthday {
 
 export type ChatRole = 'user' | 'assistant'
 
+/**
+ * Compact summary of an action the assistant performed in response to a chat
+ * turn (creating a reminder, dropping an event on the schedule, etc.).
+ * Stored on the assistant ChatMessage so the bubble can render receipt chips
+ * underneath the reply.
+ */
+export type ActionReceiptKind = 'reminder' | 'event'
+
+export interface ActionReceipt {
+  kind: ActionReceiptKind
+  title: string
+  // Display string — already humanised by the caller, e.g. "Sun May 11 · 7:00 PM".
+  when: string
+  category: AreaId
+}
+
 export interface ChatMessage {
   id: string
   role: ChatRole
   content: string
   createdAt: string
+  /** Present on assistant messages that triggered side effects. */
+  actions?: ActionReceipt[]
 }
 
 export interface DailyPlan {
