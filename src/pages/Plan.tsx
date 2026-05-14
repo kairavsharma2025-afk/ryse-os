@@ -8,7 +8,7 @@ import {
   StickyNote,
   type LucideIcon,
 } from 'lucide-react'
-import { Schedule } from './Schedule'
+import { WeekGrid } from '@/components/schedule/WeekGrid'
 import { PlanDay } from '@/components/plan/PlanDay'
 import { PlanMatrix } from '@/components/plan/PlanMatrix'
 import { PlanInbox } from '@/components/plan/PlanInbox'
@@ -124,7 +124,7 @@ export function Plan() {
 
       <div>
         {view === 'day' && <PlanDay />}
-        {view === 'week' && <Schedule />}
+        {view === 'week' && <WeekGrid />}
         {view === 'matrix' && <PlanMatrix />}
         {view === 'inbox' && <PlanInbox />}
         {view === 'notes' && <PlanNotes />}

@@ -23,7 +23,7 @@ interface Props {
 
 const labelCls = 'text-[10px] uppercase tracking-[0.2em] text-muted mb-1.5 block'
 const inputCls =
-  'w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50'
+  'w-full bg-surface2 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/60 transition-colors'
 
 export function EventForm({ initial, defaultDate, onSave, onCancel, onDelete }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -84,10 +84,10 @@ export function EventForm({ initial, defaultDate, onSave, onCancel, onDelete }: 
               key={a.id}
               type="button"
               onClick={() => setCategory(a.id)}
-              className={`px-2 py-2 rounded-lg border text-xs transition ${
+              className={`px-2 py-2 rounded-lg border text-xs transition-colors ${
                 category === a.id
                   ? 'border-accent bg-accent/10 text-text'
-                  : 'border-border bg-surface2/40 text-muted hover:text-text'
+                  : 'border-border/40 bg-surface2/40 text-muted hover:text-text'
               }`}
             >
               {a.emoji} {a.name}

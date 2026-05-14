@@ -1,188 +1,151 @@
-import { useMemo, useState } from 'react'
-import { addDays, addWeeks, format, startOfWeek } from 'date-fns'
-import { CalendarPlus, ChevronLeft, ChevronRight, Plus, Bot } from 'lucide-react'
+import { useMemo } from 'react'
+import { Bot, Activity, Clock, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
-import { EventForm, type EventDraft } from '@/components/schedule/EventForm'
 import { useSchedule } from '@/stores/scheduleStore'
 import { useAssistant } from '@/stores/assistantStore'
-import { AREAS } from '@/data/areas'
+import { AREAS, AREA_LIST } from '@/data/areas'
 import { todayISO } from '@/engine/dates'
-import type { ScheduleEvent } from '@/types'
+import { addDays, format, startOfWeek } from 'date-fns'
+import { WeekGrid } from '@/components/schedule/WeekGrid'
 
-const fmtISO = (d: Date) => format(d, 'yyyy-MM-dd')
-
+/**
+ * Standalone Schedule page. The week grid itself lives in WeekGrid (shared
+ * with /plan?v=week); this page wraps it with the page chrome — header,
+ * this-week stats, assistant CTA.
+ */
 export function Schedule() {
   const events = useSchedule((s) => s.events)
-  const addEvent = useSchedule((s) => s.addEvent)
-  const updateEvent = useSchedule((s) => s.updateEvent)
-  const deleteEvent = useSchedule((s) => s.deleteEvent)
   const openAssistant = useAssistant((s) => s.setPanelOpen)
 
-  const [weekOffset, setWeekOffset] = useState(0)
-  const [addFor, setAddFor] = useState<string | null>(null)
-  const [editing, setEditing] = useState<ScheduleEvent | null>(null)
-
-  const weekStart = useMemo(
-    () => startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 }),
-    [weekOffset]
-  )
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
-  const today = todayISO()
-
-  const byDay = useMemo(() => {
-    const map: Record<string, ScheduleEvent[]> = {}
-    for (const e of events) (map[e.date] ??= []).push(e)
-    for (const k of Object.keys(map))
-      map[k].sort((a, b) => a.startTime.localeCompare(b.startTime) || a.title.localeCompare(b.title))
-    return map
-  }, [events])
-
-  const rangeLabel = `${format(weekStart, 'MMM d')} – ${format(addDays(weekStart, 6), 'MMM d')}`
-
-  const handleSave = (draft: EventDraft) => {
-    const values = { ...draft, notes: draft.notes || undefined }
-    if (editing) updateEvent(editing.id, values)
-    else addEvent({ ...values, source: 'manual' })
-    setEditing(null)
-    setAddFor(null)
-  }
+  const stats = useMemo(() => computeWeekStats(events), [events])
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <header className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-3xl tracking-wide">Schedule</h1>
           <p className="text-sm text-muted mt-1">
-            Time-block your week. The Game Master plans and reminds around whatever&apos;s here.
+            Time-block the week. The Game Master plans and reminds around what's here.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => openAssistant(true)}>
-            <Bot className="w-3.5 h-3.5" />
-            Ask to plan it
-          </Button>
-          <Button size="sm" onClick={() => setAddFor(today)}>
-            <CalendarPlus className="w-3.5 h-3.5" />
-            Add event
-          </Button>
-        </div>
-      </div>
+        <Button variant="ghost" size="sm" onClick={() => openAssistant(true)}>
+          <Bot className="w-3.5 h-3.5" />
+          Ask to plan it
+        </Button>
+      </header>
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setWeekOffset((o) => o - 1)}
-          className="w-8 h-8 rounded-lg border border-border bg-surface2/40 text-muted hover:text-text flex items-center justify-center"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <div className="font-display tracking-wide text-lg min-w-[10rem] text-center">{rangeLabel}</div>
-        <button
-          onClick={() => setWeekOffset((o) => o + 1)}
-          className="w-8 h-8 rounded-lg border border-border bg-surface2/40 text-muted hover:text-text flex items-center justify-center"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-        {weekOffset !== 0 && (
-          <Button variant="subtle" size="sm" onClick={() => setWeekOffset(0)}>
-            This week
-          </Button>
-        )}
-      </div>
+      <WeekStats stats={stats} />
+      <WeekGrid />
+    </div>
+  )
+}
 
-      <div className="overflow-x-auto py-1 -mx-1 px-1">
-        <div className="grid grid-cols-[repeat(7,minmax(120px,1fr))] gap-3">
-        {days.map((d) => {
-          const iso = fmtISO(d)
-          const isToday = iso === today
-          const list = byDay[iso] ?? []
-          return (
-            <div
-              key={iso}
-              className={`min-w-[120px] rounded-2xl border p-2.5 min-h-[8rem] flex flex-col ${
-                isToday ? 'border-accent/50 bg-accent/[0.06] shadow-glow' : 'border-border bg-surface/60'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2 px-0.5">
-                <div className="leading-none">
-                  <div
-                    className={`text-[10px] uppercase tracking-[0.22em] ${
-                      isToday ? 'text-accent' : 'text-muted'
-                    }`}
-                  >
-                    {format(d, 'EEE')}
-                  </div>
-                  <div className={`text-lg font-display ${isToday ? 'text-accent' : 'text-text'}`}>
-                    {format(d, 'd')}
-                  </div>
-                </div>
-                {isToday && (
-                  <span className="text-[8px] uppercase tracking-wider bg-accent text-bg px-1.5 py-0.5 rounded-full font-bold">
-                    today
-                  </span>
-                )}
-              </div>
+interface WeekStats {
+  totalEvents: number
+  totalMinutes: number
+  byCategory: Array<{ id: string; name: string; color: string; minutes: number }>
+  todayCount: number
+}
 
-              <div className="space-y-1.5 flex-1">
-                {list.map((e) => {
-                  const area = AREAS[e.category]
-                  return (
-                    <button
-                      key={e.id}
-                      onClick={() => setEditing(e)}
-                      className="w-full text-left rounded-lg bg-surface2/60 hover:bg-surface2 border border-border/60 px-2 py-1.5 transition"
-                      style={{ borderLeft: `3px solid rgb(var(--${area.color}))` }}
-                    >
-                      <div className="text-[10px] text-muted tabular-nums">
-                        {e.startTime}–{e.endTime}
-                      </div>
-                      <div className="text-xs text-text leading-snug line-clamp-2">{e.title}</div>
-                      {e.source === 'assistant' && (
-                        <div className="text-[9px] text-accent2/80 mt-0.5">★ from assistant</div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
+function computeWeekStats(events: ReturnType<typeof useSchedule.getState>['events']): WeekStats {
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekEnd = addDays(weekStart, 7)
+  const wsISO = format(weekStart, 'yyyy-MM-dd')
+  const weISO = format(weekEnd, 'yyyy-MM-dd')
+  const today = todayISO()
 
-              <button
-                onClick={() => setAddFor(iso)}
-                className="mt-1.5 text-[10px] text-muted hover:text-accent flex items-center justify-center gap-1 py-1 rounded-md hover:bg-surface2/40"
+  let totalEvents = 0
+  let totalMinutes = 0
+  let todayCount = 0
+  const catMin = new Map<string, number>()
+
+  for (const e of events) {
+    if (e.date < wsISO || e.date >= weISO) continue
+    totalEvents++
+    if (e.date === today) todayCount++
+    const m = minutesBetween(e.startTime, e.endTime)
+    totalMinutes += m
+    catMin.set(e.category, (catMin.get(e.category) ?? 0) + m)
+  }
+
+  const byCategory = AREA_LIST.filter((a) => (catMin.get(a.id) ?? 0) > 0).map((a) => ({
+    id: a.id,
+    name: a.name,
+    color: a.color,
+    minutes: catMin.get(a.id) ?? 0,
+  }))
+  byCategory.sort((a, b) => b.minutes - a.minutes)
+
+  return { totalEvents, totalMinutes, byCategory, todayCount }
+}
+
+function minutesBetween(start: string, end: string): number {
+  const [sh, sm] = start.split(':').map(Number)
+  const [eh, em] = end.split(':').map(Number)
+  const m = (eh - sh) * 60 + (em - sm)
+  return m > 0 ? m : 0
+}
+
+function formatHours(minutes: number): string {
+  if (minutes === 0) return '0h'
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
+
+function WeekStats({ stats }: { stats: WeekStats }) {
+  if (stats.totalEvents === 0) return null
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+      <Tile icon={Activity} label="Events · week" value={stats.totalEvents} />
+      <Tile icon={Clock} label="Blocked time" value={formatHours(stats.totalMinutes)} />
+      <Tile icon={BarChart3} label="Today" value={stats.todayCount} />
+      {stats.byCategory.length > 0 && (
+        <div className="rounded-2xl bg-surface border border-border/10 shadow-card px-3 py-2.5 col-span-2 sm:col-span-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted mb-2">
+            By category · this week
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {stats.byCategory.map((c) => (
+              <span
+                key={c.id}
+                className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-border/30"
               >
-                <Plus className="w-3 h-3" /> add
-              </button>
-            </div>
-          )
-        })}
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: `rgb(var(--${AREAS[c.id as keyof typeof AREAS].color}))` }}
+                />
+                <span className="text-text">{c.name}</span>
+                <span className="text-muted tabular-nums">{formatHours(c.minutes)}</span>
+              </span>
+            ))}
+          </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+function Tile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Activity
+  label: string
+  value: number | string
+}) {
+  return (
+    <div className="rounded-2xl bg-surface border border-border/10 shadow-card px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted">
+        <Icon className="w-3 h-3" strokeWidth={1.8} />
+        <span>{label}</span>
       </div>
-
-      <Modal
-        open={addFor !== null}
-        onClose={() => setAddFor(null)}
-        title="New event"
-        size="sm"
-      >
-        <EventForm
-          defaultDate={addFor ?? today}
-          onSave={handleSave}
-          onCancel={() => setAddFor(null)}
-        />
-      </Modal>
-
-      <Modal open={editing !== null} onClose={() => setEditing(null)} title="Edit event" size="sm">
-        {editing && (
-          <EventForm
-            initial={editing}
-            onSave={handleSave}
-            onCancel={() => setEditing(null)}
-            onDelete={() => {
-              deleteEvent(editing.id)
-              setEditing(null)
-            }}
-          />
-        )}
-      </Modal>
+      <div className="font-display text-2xl mt-0.5 tabular-nums leading-none text-text">
+        {value}
+      </div>
     </div>
   )
 }
