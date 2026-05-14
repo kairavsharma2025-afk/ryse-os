@@ -180,7 +180,7 @@ export function Onboarding() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
-                className="w-full bg-surface2 border border-border rounded-lg px-4 py-3 mb-6 focus:outline-none focus:border-accent"
+                className="w-full bg-surface2 border border-border/40 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:border-accent"
                 autoFocus
               />
               <div className="text-xs text-muted mb-2">Pick an avatar</div>
@@ -196,7 +196,7 @@ export function Onboarding() {
                       className={`aspect-square rounded-lg border p-1 transition flex items-center justify-center ${
                         selected
                           ? 'border-accent bg-accent/10 ring-1 ring-accent/40'
-                          : 'border-border bg-surface2/40 hover:bg-surface2'
+                          : 'border-border/40 bg-surface2/40 hover:bg-surface2'
                       }`}
                     >
                       <Avatar id={a.id} alt={a.label} className="h-full w-full" />
@@ -245,7 +245,7 @@ export function Onboarding() {
                     className={`p-5 rounded-2xl border text-left transition ${
                       selected
                         ? 'border-accent bg-accent/10 shadow-glow'
-                        : 'border-border bg-surface hover:border-accent/40'
+                        : 'border-border/40 bg-surface hover:border-accent/40'
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -322,7 +322,7 @@ export function Onboarding() {
                       className={`px-3 py-1.5 rounded-full text-xs border transition inline-flex items-center gap-1.5 ${
                         selected
                           ? 'border-accent bg-accent/10 text-accent'
-                          : 'border-border text-muted hover:text-text'
+                          : 'border-border/40 text-muted hover:text-text'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" strokeWidth={1.8} />
@@ -336,7 +336,7 @@ export function Onboarding() {
                 value={goalTitle}
                 onChange={(e) => setGoalTitle(e.target.value)}
                 placeholder="e.g. Hit the gym 4× a week"
-                className="w-full bg-surface2 border border-border rounded-lg px-4 py-3 mb-6 focus:outline-none focus:border-accent"
+                className="w-full bg-surface2 border border-border/40 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:border-accent"
               />
               <div className="flex justify-between">
                 <Button variant="ghost" onClick={prev}>Back</Button>
@@ -412,7 +412,7 @@ export function Onboarding() {
                       type="time"
                       value={value}
                       onChange={(e) => set(e.target.value)}
-                      className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50"
+                      className="w-full bg-surface2 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/60"
                     />
                   </div>
                 ))}
@@ -434,7 +434,7 @@ export function Onboarding() {
                   {draftBirthdays.map((b, i) => (
                     <li
                       key={i}
-                      className="flex items-center gap-2 text-sm rounded-lg border border-border bg-surface2/30 px-3 py-1.5"
+                      className="flex items-center gap-2 text-sm rounded-lg border border-border/40 bg-surface2/30 px-3 py-1.5"
                     >
                       <span className="min-w-0 flex-1 truncate">
                         {b.name} <span className="text-muted">· {MONTHS[b.month - 1]} {b.day}</span>
@@ -462,13 +462,13 @@ export function Onboarding() {
                     }
                   }}
                   placeholder="Name"
-                  className="flex-1 min-w-0 bg-surface2 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/50"
+                  className="flex-1 min-w-0 bg-surface2 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent/60"
                 />
                 <input
                   type="date"
                   value={bdDate}
                   onChange={(e) => setBdDate(e.target.value)}
-                  className="bg-surface2 border border-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-accent/50"
+                  className="bg-surface2 border border-border/40 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-accent/60"
                 />
                 <Button type="button" size="sm" variant="ghost" disabled={!bdName.trim()} onClick={addDraftBirthday}>
                   Add
