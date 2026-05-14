@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
-import { bootstrapSync } from './engine'
+import { bootstrapSync, pullRemote } from './engine'
 import { getSyncUserId } from './client'
 import { useSync } from './syncStore'
+
+const POLL_INTERVAL_MS = 30_000
 
 const shortLabel = (id: string): string => `device · ${id.slice(0, 4)}…${id.slice(-4)}`
 
@@ -55,11 +57,40 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       if (e.key === 'lifeos:v1:__sync_user_id') reconcile()
     }
     const onPaired = () => reconcile()
+
+    // Pull remote state on focus / visibility-change and every 30s while visible,
+    // so changes made on the other paired device (phone ↔ laptop) show up here
+    // without a manual refresh. Reload on change so Zustand stores rehydrate.
+    let pulling = false
+    async function pullIfPaired() {
+      if (pulling) return
+      if (!getSyncUserId()) return
+      pulling = true
+      try {
+        const changed = await pullRemote()
+        if (changed.length > 0) window.location.reload()
+      } finally {
+        pulling = false
+      }
+    }
+    const onFocus = () => void pullIfPaired()
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') void pullIfPaired()
+    }
+    const pollTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void pullIfPaired()
+    }, POLL_INTERVAL_MS)
+
     window.addEventListener('storage', onStorage)
     window.addEventListener('ryse:sync-identity-changed', onPaired)
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
       window.removeEventListener('storage', onStorage)
       window.removeEventListener('ryse:sync-identity-changed', onPaired)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.clearInterval(pollTimer)
     }
   }, [])
 

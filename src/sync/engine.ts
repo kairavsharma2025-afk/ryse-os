@@ -164,6 +164,44 @@ export function bootstrapSync(userId: string): Promise<BootstrapResult> {
   return bootstrapPromise
 }
 
+/**
+ * Pull remote state and apply any keys where remote is newer than local.
+ * Unlike `bootstrapSync`, this never wipes local data, never pushes back, and
+ * never changes the owner. Safe to call periodically (focus/visibility/poll).
+ *
+ * Returns the list of store keys that were overwritten — callers typically
+ * reload the page so Zustand stores rehydrate from the updated localStorage.
+ */
+export async function pullRemote(): Promise<string[]> {
+  if (!syncEnabled()) return []
+  if (inFlight) return []
+  inFlight = true
+  useSync.getState().setPhase('syncing')
+  const changedKeys: string[] = []
+  try {
+    const remote = await apiGetState()
+    const meta = readMeta()
+    for (const [key, r] of Object.entries(remote)) {
+      if (key.startsWith('__sync')) continue
+      const localTs = meta[key] ?? null
+      const localData = readLocalBlob(key)
+      const hasLocal = localData !== undefined
+      const remoteWins = !hasLocal || ts(r.updatedAt) > ts(localTs)
+      if (remoteWins) {
+        writeLocalBlob(key, r.data)
+        setKeyTimestamp(key, r.updatedAt)
+        changedKeys.push(key)
+      }
+    }
+    useSync.getState().markSynced()
+  } catch (err) {
+    useSync.getState().setError(errMessage(err))
+  } finally {
+    inFlight = false
+  }
+  return changedKeys
+}
+
 /** Force-flush any pending changes immediately (e.g. before a manual reset). */
 export async function flushNow(): Promise<void> {
   if (pushTimer) {
