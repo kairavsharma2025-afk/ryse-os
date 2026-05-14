@@ -113,14 +113,13 @@ export function Layout() {
     }
   }, [ownedThemes, unlockTheme])
 
-  // One-shot: legacy characters were created when 'default' was the only choice.
-  // Move them to the new Cosmos look once; if they want Obsidian Dawn back it's
-  // one click in Settings → Theme.
+  // One-shot: 2026 redesign — move everyone to the new "ryse" theme. Cosmos /
+  // Obsidian Dawn / etc. are still available as cosmetic options in Settings.
   useEffect(() => {
-    const KEY = 'lifeos:v1:cosmos_migration_v1'
+    const KEY = 'lifeos:v1:ryse_theme_migration_v1'
     try {
       if (localStorage.getItem(KEY)) return
-      if (activeTheme === 'default') setActiveTheme('cosmos')
+      if (activeTheme === 'cosmos' || activeTheme === 'default') setActiveTheme('ryse')
       localStorage.setItem(KEY, '1')
     } catch {
       /* localStorage unavailable — skip */

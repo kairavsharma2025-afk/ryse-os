@@ -12,6 +12,15 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   {
+    id: 'ryse',
+    name: 'Ryse',
+    description: 'The canonical look. Apple-clean, focused, calm. Adapts to light & dark.',
+    className: 'theme-ryse',
+    rarity: 'common',
+    unlockedByDefault: true,
+    preview: { bg: '#000000', surface: '#1c1c1e', accent: '#0a84ff', accent2: '#64b4ff' },
+  },
+  {
     id: 'cosmos',
     name: 'Cosmos',
     description: 'Starfield over deep blue. Adapts to light & dark.',
