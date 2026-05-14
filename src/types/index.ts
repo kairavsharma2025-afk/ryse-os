@@ -411,6 +411,52 @@ export interface Reminder {
   snoozedUntil?: string // ISO datetime — overrides the next fire time once
 }
 
+// ===== Tasks (Inbox) =====
+//
+// Lightweight todo items that live on the Plan tab. Distinct from Reminders
+// (which fire at a specific time) and ScheduleEvents (which occupy a time
+// block). A Task is just "something to do" — possibly with a due date, possibly
+// flagged urgent/important for the Eisenhower matrix, possibly delegated.
+
+export type TaskPriority = 1 | 2 | 3 | 4 // 1 = highest
+
+export type TaskSource = 'manual' | 'quickadd' | 'assistant'
+
+export interface Task {
+  id: string
+  title: string
+  notes?: string
+  category: AreaId
+  priority: TaskPriority
+  important: boolean // y-axis of the Eisenhower matrix
+  urgent: boolean // x-axis; auto-derived from dueDate ≤ today but the user can pin it
+  dueDate?: string // YYYY-MM-DD — optional
+  energy?: 'deep' | 'shallow' | 'recovery' | 'social'
+  // Delegation tracker — when assignedTo is set, the task lives in a "waiting on"
+  // pool. followUpDate is when the user wants to be nudged to chase it.
+  assignedTo?: string
+  followUpDate?: string // YYYY-MM-DD
+  completedAt?: string // ISO datetime
+  createdAt: string // ISO datetime
+  source: TaskSource
+  goalId?: string // optional link to a Goal
+}
+
+// ===== Notes (capture) =====
+//
+// Plain-text snippets, optionally pinned. Distinct from goal/quest notes — these
+// live in the Notes tab on Plan and exist for raw capture (ideas, snippets,
+// meeting jottings) before they become tasks/goals/events.
+
+export interface Note {
+  id: string
+  body: string // plain text, multi-line ok
+  category?: AreaId
+  pinned: boolean
+  createdAt: string // ISO datetime
+  updatedAt: string // ISO datetime
+}
+
 // ===== Birthdays =====
 
 export interface Birthday {

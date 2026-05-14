@@ -5,6 +5,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Button } from '@/components/ui/Button'
 import { useSchedule } from '@/stores/scheduleStore'
 import { useReminders } from '@/stores/remindersStore'
+import { useTasks } from '@/stores/tasksStore'
 import { todayISO } from '@/engine/dates'
 import { toast } from '@/components/ui/Toast'
 import { addDays, format } from 'date-fns'
@@ -170,6 +171,7 @@ function QuickAddSheet({ open, onClose }: { open: boolean; onClose: () => void }
   const [busy, setBusy] = useState(false)
   const addEvent = useSchedule((s) => s.addEvent)
   const addReminder = useReminders((s) => s.addReminder)
+  const addTask = useTasks((s) => s.addTask)
 
   // Reset state every time the sheet opens.
   useEffect(() => {
@@ -227,17 +229,19 @@ function QuickAddSheet({ open, onClose }: { open: boolean; onClose: () => void }
         })
         toast.success('Scheduled', `${date} at ${time || '09:00'}`)
       } else {
-        // Default: reminder at 09:00 today — Wave 3 swaps this for the Inbox.
-        addReminder({
+        // No explicit time → it's an Inbox task. Lands on Plan → Inbox.
+        const dueDate = date !== todayISO() ? date : undefined
+        addTask({
           title: finalTitle,
-          date,
-          time: '09:00',
-          repeat: 'once',
           category,
-          priority: priority === 1 ? 'high' : priority >= 3 ? 'low' : 'normal',
-          source: 'manual',
+          priority,
+          important: priority <= 2,
+          urgent: priority === 1,
+          dueDate,
+          energy: energy ?? undefined,
+          source: 'quickadd',
         })
-        toast.success('Saved', 'Added to today as a reminder')
+        toast.success('Added to Inbox', dueDate ? `Due ${dueDate}` : 'No due date')
       }
       onClose()
     } catch (err) {
