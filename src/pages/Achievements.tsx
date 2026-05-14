@@ -1,112 +1,167 @@
+import { useMemo, useState } from 'react'
+import { Trophy, Lock, Sparkles } from 'lucide-react'
 import { useCharacter } from '@/stores/characterStore'
 import { ACHIEVEMENTS } from '@/data/achievements'
+import { AchievementsBanner } from '@/components/achievements/AchievementsBanner'
+import { AchievementCard } from '@/components/achievements/AchievementCard'
 import type { Rarity } from '@/types'
-import { motion } from 'framer-motion'
-import { achievementIcon, Lock } from '@/components/icons'
 
 const RARITY_ORDER: Rarity[] = ['common', 'rare', 'epic', 'legendary']
+const RARITY_LABEL: Record<Rarity, string> = {
+  common: 'Common',
+  rare: 'Rare',
+  epic: 'Epic',
+  legendary: 'Legendary',
+}
 
+type StatusTab = 'all' | 'unlocked' | 'locked'
+
+const STATUS: { id: StatusTab; label: string; icon: typeof Trophy }[] = [
+  { id: 'all', label: 'All', icon: Sparkles },
+  { id: 'unlocked', label: 'Unlocked', icon: Trophy },
+  { id: 'locked', label: 'Locked', icon: Lock },
+]
+
+/**
+ * Achievements gallery. Rarity banner doubles as a filter; status segmented
+ * control toggles between All / Unlocked / Locked. The grid is grouped by
+ * rarity (highest tier first when filtered to legendary; common first
+ * otherwise) so the visual hierarchy mirrors the rarity gradient.
+ */
 export function Achievements() {
   const unlocked = useCharacter((s) => new Set(s.achievements))
-  const total = ACHIEVEMENTS.length
+  const [rarity, setRarity] = useState<Rarity | null>(null)
+  const [status, setStatus] = useState<StatusTab>('all')
+
+  const filtered = useMemo(() => {
+    return ACHIEVEMENTS.filter((a) => {
+      if (rarity && a.rarity !== rarity) return false
+      if (status === 'unlocked') return unlocked.has(a.id)
+      if (status === 'locked') return !unlocked.has(a.id)
+      return true
+    })
+  }, [rarity, status, unlocked])
+
+  const byRarity = useMemo(() => {
+    const map: Record<Rarity, typeof ACHIEVEMENTS> = {
+      common: [],
+      rare: [],
+      epic: [],
+      legendary: [],
+    }
+    for (const a of filtered) map[a.rarity].push(a)
+    return map
+  }, [filtered])
+
+  const statusCounts: Record<StatusTab, number> = useMemo(() => {
+    let u = 0
+    for (const a of ACHIEVEMENTS) if (unlocked.has(a.id)) u++
+    return {
+      all: ACHIEVEMENTS.length,
+      unlocked: u,
+      locked: ACHIEVEMENTS.length - u,
+    }
+  }, [unlocked])
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-3xl tracking-wide">Achievements</h1>
-          <p className="text-muted text-sm">
-            {unlocked.size} / {total} unlocked
-          </p>
+    <div className="space-y-6">
+      <header>
+        <h1 className="font-display text-3xl tracking-wide">Achievements</h1>
+        <p className="text-sm text-muted mt-1">
+          {statusCounts.unlocked} of {statusCounts.all} unlocked.{' '}
+          {statusCounts.unlocked === statusCounts.all
+            ? "Every glyph claimed — you've gone the distance."
+            : `${statusCounts.locked} still hidden in the fog.`}
+        </p>
+      </header>
+
+      <AchievementsBanner
+        unlockedIds={unlocked}
+        rarityFilter={rarity}
+        onFilter={setRarity}
+      />
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div
+          role="tablist"
+          aria-label="Status"
+          className="inline-flex p-1 rounded-xl bg-surface2/50 border border-border/10 gap-0.5"
+        >
+          {STATUS.map((t) => {
+            const Icon = t.icon
+            const active = status === t.id
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setStatus(t.id)}
+                className={`px-3 h-9 rounded-lg text-sm transition-colors duration-80 flex items-center gap-1.5 whitespace-nowrap ${
+                  active
+                    ? 'bg-accent text-white font-semibold shadow-card'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                <Icon className="w-4 h-4" strokeWidth={active ? 2.2 : 1.8} />
+                {t.label}
+                <span
+                  className={`text-[10px] px-1 rounded-full font-bold ${
+                    active ? 'bg-white/25 text-white' : 'bg-surface2 text-muted'
+                  }`}
+                >
+                  {statusCounts[t.id]}
+                </span>
+              </button>
+            )
+          })}
         </div>
+        {rarity && (
+          <button
+            onClick={() => setRarity(null)}
+            className="text-[11px] text-muted hover:text-text underline-offset-2 hover:underline"
+          >
+            Clear rarity filter
+          </button>
+        )}
       </div>
 
-      {RARITY_ORDER.map((rarity) => {
-        const list = ACHIEVEMENTS.filter((a) => a.rarity === rarity)
-        if (list.length === 0) return null
-        return (
-          <section key={rarity} className="mb-8">
-            <div
-              className="text-[10px] uppercase tracking-[0.4em] mb-3"
-              style={{ color: `rgb(var(--${rarity}))` }}
-            >
-              {rarity}
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {list.map((a) => {
-                const have = unlocked.has(a.id)
-                const Icon = achievementIcon(a.id, a.rarity)
-                return (
-                  <motion.div
-                    key={a.id}
-                    layout
-                    className={`rounded-2xl border p-4 ${
-                      have
-                        ? `bg-surface border-${rarity}/40`
-                        : 'bg-surface/50 border-border opacity-75'
-                    }`}
-                    style={{
-                      borderColor: have ? `rgb(var(--${rarity}) / 0.5)` : undefined,
-                      boxShadow:
-                        have && rarity === 'legendary'
-                          ? `0 0 24px rgb(var(--${rarity}) / 0.3)`
-                          : undefined,
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-                        style={{
-                          background: have
-                            ? `rgb(var(--${rarity}) / 0.15)`
-                            : 'rgb(var(--surface2) / 0.6)',
-                          color: have
-                            ? `rgb(var(--${rarity}))`
-                            : 'rgb(var(--muted) / 0.6)',
-                        }}
-                      >
-                        {have ? (
-                          <Icon className="w-6 h-6" strokeWidth={1.6} />
-                        ) : (
-                          <Lock className="w-5 h-5" strokeWidth={1.6} />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-display text-lg leading-tight flex items-center gap-2 flex-wrap">
-                          {a.name}
-                          {!have && (
-                            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-surface2/60 border border-border/60 text-muted/70">
-                              Locked
-                            </span>
-                          )}
-                        </div>
-                        {!have && (
-                          <div className="text-[9px] uppercase tracking-[0.18em] text-muted/55 mt-1.5">
-                            How to unlock
-                          </div>
-                        )}
-                        <div className={`text-[11px] text-muted leading-relaxed ${have ? 'mt-1' : 'mt-0.5'}`}>
-                          {a.description}
-                        </div>
-                        {!have && a.hint && a.hint !== a.description && (
-                          <div className="text-[10px] text-muted/50 italic leading-relaxed mt-1">
-                            {a.hint}
-                          </div>
-                        )}
-                        <div className="text-[10px] mt-2 flex items-center gap-2 text-muted">
-                          <span>+{a.xpReward} XP</span>
-                          {a.unlocksTitle && <span>· title</span>}
-                          {a.unlocksTheme && <span>· theme</span>}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </section>
-        )
-      })}
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-border/10 bg-surface shadow-card p-8 text-center">
+          <div className="text-sm text-muted">
+            Nothing matches. Try clearing a filter.
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-7">
+          {RARITY_ORDER.map((r) => {
+            const list = byRarity[r]
+            if (list.length === 0) return null
+            return (
+              <section key={r}>
+                <div
+                  className="text-[10px] uppercase tracking-[0.4em] mb-3 flex items-center gap-2"
+                  style={{ color: `rgb(var(--${r}))` }}
+                >
+                  <span>{RARITY_LABEL[r]}</span>
+                  <span className="text-muted/60 tracking-normal normal-case">·</span>
+                  <span className="text-muted/70 tracking-normal normal-case tabular-nums">
+                    {list.filter((a) => unlocked.has(a.id)).length}/{list.length}
+                  </span>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {list.map((a) => (
+                    <AchievementCard
+                      key={a.id}
+                      achievement={a}
+                      unlocked={unlocked.has(a.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
