@@ -95,6 +95,8 @@ export const RITUAL_ICONS: Record<string, LucideIcon> = {
 
 export const NAV_ICONS: Record<string, LucideIcon> = {
   '/': Home,
+  '/plan': CalendarDays,
+  '/life': Compass,
   '/schedule': CalendarClock,
   '/reminders': Bell,
   '/ritual': Sunrise,

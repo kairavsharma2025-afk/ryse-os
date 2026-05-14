@@ -13,6 +13,8 @@ import { Loot } from '@/pages/Loot'
 import { Skills } from '@/pages/Skills'
 import { Settings } from '@/pages/Settings'
 import { Schedule } from '@/pages/Schedule'
+import { Plan } from '@/pages/Plan'
+import { Life } from '@/pages/Life'
 import { Reminders } from '@/pages/Reminders'
 import { Birthdays } from '@/pages/Birthdays'
 import { Privacy } from '@/pages/Privacy'
@@ -69,6 +71,8 @@ export default function App() {
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/plan" element={<Plan />} />
+        <Route path="/life" element={<Life />} />
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/reminders" element={<Reminders />} />
         <Route path="/goals" element={<Goals />} />

@@ -11,70 +11,41 @@ import { upcomingReminders } from '@/engine/remindersEngine'
 import { useReminderEngine } from '@/hooks/useReminderEngine'
 import { CelebrationHost } from '@/components/celebrations/CelebrationHost'
 import { AssistantPanel } from '@/components/assistant/AssistantPanel'
-import { AssistantFab } from '@/components/assistant/AssistantFab'
 import { SmartNudge } from '@/components/assistant/SmartNudge'
 import { Avatar } from '@/components/character/Avatar'
 import { RyseLogo } from '@/components/RyseLogo'
 import { TopBar } from '@/components/TopBar'
-import { NAV_ICONS, type LucideIcon } from '@/components/icons'
-import { Bot, Settings as SettingsIcon } from 'lucide-react'
+import { QuickAddFab } from '@/components/quickadd/QuickAddFab'
+import {
+  Home as HomeIcon,
+  CalendarRange,
+  Target,
+  Sparkles,
+  Compass,
+  Settings as SettingsIcon,
+  Bot,
+  type LucideIcon,
+} from 'lucide-react'
 
-interface NavItem {
+/**
+ * Five canonical top-level destinations. Every other page in the app is reached
+ * through one of these (or via a deep link from a card on the destination).
+ * Order is fixed; if you're tempted to add a sixth, ask whether it belongs
+ * under one of these umbrellas first.
+ */
+interface PrimaryNav {
   to: string
   label: string
-}
-interface NavGroup {
-  label: string
-  items: NavItem[]
+  icon: LucideIcon
 }
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: 'Daily',
-    items: [
-      { to: '/', label: 'Today' },
-      { to: '/schedule', label: 'Schedule' },
-      { to: '/reminders', label: 'Reminders' },
-      { to: '/ritual', label: 'Ritual' },
-    ],
-  },
-  {
-    label: 'Progress',
-    items: [
-      { to: '/goals', label: 'Goals' },
-      { to: '/skills', label: 'Skills' },
-      { to: '/season', label: 'Season' },
-      { to: '/achievements', label: 'Achievements' },
-    ],
-  },
-  {
-    label: 'Life',
-    items: [
-      { to: '/finite', label: 'Finite' },
-      { to: '/values', label: 'Values' },
-      { to: '/silence', label: 'Silence' },
-      { to: '/unsent', label: 'Unsent' },
-      { to: '/onedegree', label: 'One Degree' },
-    ],
-  },
-  {
-    label: 'Customize',
-    items: [
-      { to: '/loot', label: 'Loot' },
-      { to: '/profile', label: 'Profile' },
-      { to: '/settings', label: 'Settings' },
-    ],
-  },
+const PRIMARY: PrimaryNav[] = [
+  { to: '/',       label: 'Today',  icon: HomeIcon },
+  { to: '/plan',   label: 'Plan',   icon: CalendarRange },
+  { to: '/goals',  label: 'Goals',  icon: Target },
+  { to: '/ritual', label: 'Ritual', icon: Sparkles },
+  { to: '/life',   label: 'Life',   icon: Compass },
 ]
-
-const NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items)
-const findNav = (to: string): NavItem => NAV.find((n) => n.to === to)!
-
-function NavIcon({ to, className }: { to: string; className?: string }) {
-  const Icon: LucideIcon | undefined = NAV_ICONS[to]
-  if (!Icon) return null
-  return <Icon className={className} />
-}
 
 export function Layout() {
   const character = useCharacter()
@@ -91,9 +62,13 @@ export function Layout() {
     () => upcomingReminders(reminders, 2 * 3600_000, undefined, settings.quietHours).length,
     [reminders, settings.quietHours]
   )
+
+  // Badges feed into the new 5-tab nav. Today carries the unread notif count;
+  // Plan inherits the "reminders due soon" count since reminders moved under
+  // Plan in the new IA. Goals/Ritual/Life don't surface badges.
   const badgeFor = (to: string): number => {
     if (to === '/') return unread
-    if (to === '/reminders') return dueSoon
+    if (to === '/plan') return dueSoon
     return 0
   }
 
@@ -101,8 +76,7 @@ export function Layout() {
     runOpeningTick()
   }, [])
 
-  // Auto-grant any unlocked-by-default theme that isn't owned yet (covers existing
-  // characters who pre-date themes added later — e.g. Cosmos).
+  // Auto-grant any unlocked-by-default theme that isn't owned yet.
   const unlockTheme = useCharacter((s) => s.unlockTheme)
   const ownedThemes = useCharacter((s) => s.unlockedThemes)
   const setActiveTheme = useCharacter((s) => s.setActiveTheme)
@@ -113,8 +87,7 @@ export function Layout() {
     }
   }, [ownedThemes, unlockTheme])
 
-  // One-shot: 2026 redesign — move everyone to the new "ryse" theme. Cosmos /
-  // Obsidian Dawn / etc. are still available as cosmetic options in Settings.
+  // One-shot 2026 redesign migration — see Wave 1 commit for context.
   useEffect(() => {
     const KEY = 'lifeos:v1:ryse_theme_migration_v1'
     try {
@@ -122,14 +95,13 @@ export function Layout() {
       if (activeTheme === 'cosmos' || activeTheme === 'default') setActiveTheme('ryse')
       localStorage.setItem(KEY, '1')
     } catch {
-      /* localStorage unavailable — skip */
+      /* localStorage unavailable */
     }
-    // run once per device
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    const className = THEMES.find((t) => t.id === theme)?.className ?? 'theme-default'
+    const className = THEMES.find((t) => t.id === theme)?.className ?? 'theme-ryse'
     document.documentElement.classList.forEach((c) => {
       if (c.startsWith('theme-')) document.documentElement.classList.remove(c)
     })
@@ -153,93 +125,88 @@ export function Layout() {
 
   return (
     <div className="ryse-shell min-h-full flex md:h-screen md:overflow-hidden">
-      {/* Sidebar */}
-      <aside className="hidden md:flex md:flex-col w-56 lg:w-60 shrink-0 border-r border-border bg-surface/30 backdrop-blur md:h-full">
-        <div className="px-5 pt-6 pb-5 flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-surface2/50 border border-border/50 flex items-center justify-center text-accent shadow-glow">
-            <RyseLogo className="w-7 h-7" />
+      {/* Desktop sidebar — 5 canonical tabs + Settings at bottom. */}
+      <aside className="hidden md:flex md:flex-col w-56 lg:w-60 shrink-0 border-r border-border/10 bg-surface md:h-full">
+        <div className="px-5 pt-6 pb-4 flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent">
+            <RyseLogo className="w-6 h-6" />
           </div>
-          <div className="font-display font-bold text-xl tracking-tight text-text">Ryse</div>
+          <div className="font-display font-bold text-md tracking-tight text-text">Ryse</div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
-          {NAV_GROUPS.map((group, gi) => (
-            <div key={group.label} className="space-y-1">
-              <div className="px-2 mb-1 text-[9px] uppercase tracking-[0.28em] text-muted/50 font-medium flex items-center gap-2">
-                <span>{group.label}</span>
-                <span className="flex-1 h-px bg-border/30" />
-              </div>
-              {group.items.map((n) => {
-                const badge = badgeFor(n.to)
-                return (
-                  <NavLink
-                    key={n.to}
-                    to={n.to}
-                    end={n.to === '/'}
-                    className={({ isActive }) =>
-                      `group relative flex items-center gap-3 pr-2 rounded-2xl text-sm transition-all ${
-                        isActive
-                          ? 'bg-gradient-to-r from-accent/15 via-accent/5 to-transparent text-text'
-                          : 'text-muted hover:text-text'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
+        <nav className="flex-1 overflow-y-auto px-3 pb-3">
+          <div className="space-y-0.5">
+            {PRIMARY.map((n) => {
+              const Icon = n.icon
+              const badge = badgeFor(n.to)
+              return (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  end={n.to === '/'}
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-3 px-3 h-11 rounded-xl text-sm transition-colors duration-80 ${
+                      isActive
+                        ? 'bg-accent text-white font-semibold'
+                        : 'text-muted hover:text-text hover:bg-surface2/60'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        className="w-5 h-5 shrink-0"
+                        strokeWidth={isActive ? 2.2 : 1.8}
+                      />
+                      <span className="truncate">{n.label}</span>
+                      {badge > 0 && (
                         <span
-                          className={`shrink-0 flex items-center justify-center transition-all ${
-                            isActive
-                              ? 'w-11 h-11 rounded-2xl bg-gradient-to-br from-accent to-accent2 text-bg shadow-[0_8px_24px_-4px_rgb(96_165_250/0.6)] ring-1 ring-accent/40'
-                              : 'w-9 h-9 rounded-xl bg-surface2/40 border border-border/40 text-muted/80 group-hover:text-accent group-hover:border-accent/30 group-hover:bg-surface2/60'
+                          className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                            isActive ? 'bg-white/25 text-white' : 'bg-accent text-white'
                           }`}
                         >
-                          <NavIcon to={n.to} className={isActive ? 'w-5 h-5' : 'w-4 h-4'} />
+                          {badge}
                         </span>
-                        <span className={`${isActive ? 'font-semibold tracking-tight' : ''} truncate`}>
-                          {n.label}
-                        </span>
-                        {badge > 0 && (
-                          <span className="ml-auto text-[10px] bg-accent text-bg px-1.5 py-0.5 rounded-full font-bold">
-                            {badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </NavLink>
-                )
-              })}
-              {gi < NAV_GROUPS.length - 1 && <div className="pt-1" />}
-            </div>
-          ))}
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              )
+            })}
+          </div>
         </nav>
 
-        <div className="border-t border-border/40 px-3 py-3 space-y-1">
+        <div className="border-t border-border/10 px-3 py-3 space-y-1">
           <button
             onClick={() => openAssistant(true)}
-            className="w-full flex items-center gap-3 pr-2 rounded-2xl text-sm text-muted hover:text-text transition-colors group"
+            className="w-full flex items-center gap-3 px-3 h-11 rounded-xl text-sm text-muted hover:text-text hover:bg-surface2/60 transition-colors duration-80"
           >
-            <span className="w-9 h-9 rounded-xl bg-surface2/40 border border-border/40 flex items-center justify-center group-hover:text-accent group-hover:border-accent/30">
-              <Bot className="w-4 h-4" />
-            </span>
+            <Bot className="w-5 h-5" />
             <span>Ask Assistant</span>
           </button>
-          <button
-            onClick={() => nav('/settings')}
-            className="w-full flex items-center gap-3 pr-2 rounded-2xl text-sm text-muted hover:text-text transition-colors group"
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              `w-full flex items-center gap-3 px-3 h-11 rounded-xl text-sm transition-colors duration-80 ${
+                isActive
+                  ? 'bg-accent text-white font-semibold'
+                  : 'text-muted hover:text-text hover:bg-surface2/60'
+              }`
+            }
           >
-            <span className="w-9 h-9 rounded-xl bg-surface2/40 border border-border/40 flex items-center justify-center group-hover:text-accent group-hover:border-accent/30">
-              <SettingsIcon className="w-4 h-4" />
-            </span>
+            <SettingsIcon className="w-5 h-5" />
             <span>Settings</span>
-          </button>
+          </NavLink>
           <button
             onClick={() => nav('/profile')}
-            className="w-full flex items-center gap-3 pr-2 rounded-2xl text-sm text-muted hover:text-text transition-colors mt-1"
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-xl text-sm text-muted hover:text-text hover:bg-surface2/60 transition-colors duration-80 mt-1"
           >
-            <Avatar id={character.avatar} className="w-9 h-9 border border-border text-accent" />
+            <Avatar id={character.avatar} className="w-8 h-8 border border-border/10 text-accent" />
             <div className="leading-tight text-left min-w-0">
               <div className="text-text text-xs font-medium truncate">{character.name || 'Hero'}</div>
-              <div className="text-[10px] truncate">Lv {character.level} · {character.activeTitle}</div>
+              <div className="text-[11px] text-muted truncate">
+                Lv {character.level} · {character.activeTitle}
+              </div>
             </div>
           </button>
         </div>
@@ -247,9 +214,9 @@ export function Layout() {
 
       {/* Main */}
       <main className="flex-1 min-w-0 flex flex-col md:h-full md:overflow-y-auto">
-        <div className="md:hidden sticky top-0 z-40 bg-surface/80 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
+        <div className="md:hidden sticky top-0 z-40 bg-surface/85 backdrop-blur-xl border-b border-border/10 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-surface2/50 border border-border/50 flex items-center justify-center text-accent">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-accent">
               <RyseLogo className="w-5 h-5" />
             </div>
             <div className="font-display font-bold tracking-tight">Ryse</div>
@@ -258,7 +225,7 @@ export function Layout() {
             <button onClick={() => openAssistant(true)} className="text-accent" aria-label="Assistant">
               <Bot className="w-5 h-5" />
             </button>
-            <Avatar id={character.avatar} className="w-7 h-7 border border-border text-accent" />
+            <Avatar id={character.avatar} className="w-7 h-7 border border-border/10 text-accent" />
             <span>Lv {character.level}</span>
           </div>
         </div>
@@ -270,44 +237,49 @@ export function Layout() {
         </div>
       </main>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur border-t border-border flex overflow-x-auto pb-[env(safe-area-inset-bottom)]">
-        {[
-          findNav('/'),
-          findNav('/schedule'),
-          findNav('/reminders'),
-          findNav('/ritual'),
-          findNav('/goals'),
-          findNav('/achievements'),
-          findNav('/profile'),
-          findNav('/settings'),
-        ].map((n) => (
-          <NavLink
-            key={n.to}
-            to={n.to}
-            end={n.to === '/'}
-            className={({ isActive }) =>
-              `flex-1 min-w-[4.25rem] flex flex-col items-center justify-center py-2 text-[10px] gap-0.5 ${
-                isActive ? 'text-accent' : 'text-muted'
-              }`
-            }
-          >
-            <span className="relative">
-              <NavIcon to={n.to} className="w-5 h-5" />
-              {badgeFor(n.to) > 0 && (
-                <span className="absolute -top-1.5 -right-2 text-[8px] bg-accent text-bg px-1 rounded-full font-bold">
-                  {badgeFor(n.to)}
-                </span>
+      {/* Mobile bottom-tab bar — 5 icons, label only when active. */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur-xl border-t border-border/10 flex pb-[env(safe-area-inset-bottom)]">
+        {PRIMARY.map((n) => {
+          const Icon = n.icon
+          const badge = badgeFor(n.to)
+          return (
+            <NavLink
+              key={n.to}
+              to={n.to}
+              end={n.to === '/'}
+              className={({ isActive }) =>
+                `flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors duration-80 ${
+                  isActive ? 'text-accent' : 'text-muted'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className="relative">
+                    <Icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.7} />
+                    {badge > 0 && (
+                      <span className="absolute -top-1 -right-2 text-[9px] bg-accent text-white px-1 rounded-full font-bold leading-tight">
+                        {badge}
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    className={`text-[10px] transition-opacity duration-80 ${
+                      isActive ? 'opacity-100 font-medium' : 'opacity-0'
+                    }`}
+                  >
+                    {n.label}
+                  </span>
+                </>
               )}
-            </span>
-            <span className="truncate">{n.label}</span>
-          </NavLink>
-        ))}
+            </NavLink>
+          )
+        })}
       </nav>
 
       <SmartNudge />
       <AssistantPanel />
-      <AssistantFab />
+      <QuickAddFab />
       <CelebrationHost />
     </div>
   )
