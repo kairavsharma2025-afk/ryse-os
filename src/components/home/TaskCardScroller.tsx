@@ -55,11 +55,15 @@ const PEEK_SCALE = 0.88
 const PEEK_BLUR = 5
 const PEEK_OPACITY = 0.4
 
+// rotateX (not rotateY) — the card tilts top-down like a card flipping off a
+// deck, instead of swinging open like a door. The exiting card pitches
+// forward (positive rotateX), and the new one rises from below the plane
+// (negative rotateX → 0).
 const ACTIVE_VARIANTS: Variants = {
-  enter: { rotateY: -90, opacity: 0 },
-  center: { rotateY: 0, opacity: 1 },
+  enter: { rotateX: -90, opacity: 0 },
+  center: { rotateX: 0, opacity: 1 },
   exit: (mode: 'flip' | 'slide') =>
-    mode === 'flip' ? { rotateY: 90, opacity: 0 } : { opacity: 0, y: -8 },
+    mode === 'flip' ? { rotateX: 90, opacity: 0 } : { opacity: 0, y: -8 },
 }
 
 export function TaskCardScroller() {
