@@ -15,7 +15,10 @@ import { pushSubscriptions, scheduledPushes } from '../../db/schema.js'
  */
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT ?? 'mailto:hello@ryse.app'
+// VAPID_SUBJECT is a contact identifier the push service can ping if there's
+// an issue with our app's pushes — never a recipient. URL works the same as
+// a mailto: so we default to the deployed origin and keep email out of it.
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT ?? 'https://ryse-os.vercel.app'
 const MAX_PER_RUN = 500
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
