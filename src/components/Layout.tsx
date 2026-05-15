@@ -18,6 +18,7 @@ import { TopBar } from '@/components/TopBar'
 import { QuickAddFab } from '@/components/quickadd/QuickAddFab'
 import { MobileMoreSheet } from '@/components/nav/MobileMoreSheet'
 import { NotificationsSheet } from '@/components/nav/NotificationsSheet'
+import { ensurePushSubscription, syncPushSchedule } from '@/sync/push'
 import {
   Home as HomeIcon,
   CalendarRange,
@@ -80,7 +81,20 @@ export function Layout() {
 
   useEffect(() => {
     runOpeningTick()
+    // Try to register a push subscription so the server can fire reminders
+    // when the tab is closed. No-op if VAPID isn't configured / permission
+    // isn't granted / not signed in for sync.
+    void ensurePushSubscription()
   }, [])
+
+  // Re-publish the next 48h of reminder + birthday fires whenever the user's
+  // reminders change (debounced) so the Vercel cron has the latest schedule.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      void syncPushSchedule(reminders, settings.quietHours)
+    }, 1500)
+    return () => window.clearTimeout(t)
+  }, [reminders, settings.quietHours])
 
   // Auto-grant any unlocked-by-default theme that isn't owned yet.
   const unlockTheme = useCharacter((s) => s.unlockTheme)

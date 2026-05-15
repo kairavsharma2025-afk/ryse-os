@@ -27,6 +27,7 @@
     "@capacitor/local-notifications": "^8.1.0",
     "@neondatabase/serverless": "^0.10.4",
     "@types/bcryptjs": "^2.4.6",
+    "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "date-fns": "^3.6.0",
     "drizzle-orm": "^0.36.4",
@@ -36,6 +37,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.1",
+    "web-push": "^3.6.7",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

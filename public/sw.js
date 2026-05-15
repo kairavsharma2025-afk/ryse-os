@@ -1,6 +1,6 @@
 /* Ryse — minimal service worker: app-shell offline + runtime asset cache.
    Bump CACHE when you want every client to drop its old cached assets. */
-const CACHE = 'ryse-v2'
+const CACHE = 'ryse-v3'
 const APP_SHELL = ['/', '/index.html', '/icon.svg', '/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {
@@ -50,5 +50,44 @@ self.addEventListener('fetch', (event) => {
           })
           .catch(() => cached)
     )
+  )
+})
+
+/* Web Push — fires when the browser/phone is closed, as long as the user
+   granted notification permission and the device has an active subscription.
+   The server (api/cron/push-dispatch) sends a JSON payload that we unpack
+   into a native OS notification. */
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    /* malformed payload — fall back to defaults */
+  }
+  const title = data.title || 'Ryse'
+  const options = {
+    body: data.body || '',
+    icon: '/pwa-192.png',
+    badge: '/pwa-192.png',
+    tag: data.tag || 'ryse',
+    data: { url: data.url || '/' },
+  }
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = (event.notification.data && event.notification.data.url) || '/'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      // Reuse an existing tab if we have one — saves the user a reload.
+      for (const w of wins) {
+        if ('focus' in w) {
+          w.navigate(target)
+          return w.focus()
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target)
+    })
   )
 })
