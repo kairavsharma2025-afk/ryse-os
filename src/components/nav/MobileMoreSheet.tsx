@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   CalendarRange,
   Target,
-  Sparkles,
+  Sunrise,
   Compass,
   Bell,
   Cake,
@@ -44,7 +44,7 @@ const SECTIONS: { title: string; items: MoreItem[] }[] = [
     items: [
       { to: '/plan', label: 'Plan', icon: CalendarRange, desc: 'Today, week, inbox' },
       { to: '/goals', label: 'Goals', icon: Target, desc: 'Long-term quests' },
-      { to: '/ritual', label: 'Ritual', icon: Sparkles, desc: 'Daily steps' },
+      { to: '/ritual', label: 'Ritual', icon: Sunrise, desc: 'Daily steps' },
       { to: '/life', label: 'Life', icon: Compass, desc: 'Inner work, areas, modules' },
     ],
   },

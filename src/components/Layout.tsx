@@ -27,6 +27,7 @@ import {
   CalendarRange,
   Target,
   Sparkles,
+  Sunrise,
   Compass,
   Settings as SettingsIcon,
   Bot,
@@ -51,7 +52,7 @@ const PRIMARY: PrimaryNav[] = [
   { to: '/',       label: 'Today',  icon: HomeIcon },
   { to: '/plan',   label: 'Plan',   icon: CalendarRange },
   { to: '/goals',  label: 'Goals',  icon: Target },
-  { to: '/ritual', label: 'Ritual', icon: Sparkles },
+  { to: '/ritual', label: 'Ritual', icon: Sunrise },
   { to: '/life',   label: 'Life',   icon: Compass },
 ]
 
