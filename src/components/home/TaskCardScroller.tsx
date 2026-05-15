@@ -8,7 +8,7 @@ import { useReminders } from '@/stores/remindersStore'
 import { actionCompleteQuest, actionLogGoal } from '@/engine/gameLoop'
 import { todayISO } from '@/engine/dates'
 import { AREA_ICONS } from '@/components/icons'
-import { Zap, Check, Calendar, Bell, Target, Brain, Sparkles, ChevronUp, ChevronDown } from 'lucide-react'
+import { Zap, Check, Calendar, Bell, Target, Brain, Sparkles } from 'lucide-react'
 import type { AreaId } from '@/types'
 
 /**
@@ -287,7 +287,18 @@ export function TaskCardScroller() {
     }
   }
 
-  function handleSwipeEnd(item: TodayItem, info: PanInfo) {
+  function handleDragEnd(item: TodayItem, info: PanInfo) {
+    const ax = Math.abs(info.offset.x)
+    const ay = Math.abs(info.offset.y)
+    // Vertical swipe wins when it's clearly the dominant axis — swipe up =
+    // next task, swipe down = previous task. Threshold matches the right-
+    // swipe-to-complete one so accidental drift doesn't trigger nav.
+    if (ay > ax && (ay > 60 || Math.abs(info.velocity.y) > 500)) {
+      if (info.offset.y < 0) goNext()
+      else goPrev()
+      return
+    }
+    // Right-swipe → complete (existing gesture).
     if (info.offset.x > 80 || info.velocity.x > 600) {
       handleComplete(item)
     }
@@ -297,25 +308,8 @@ export function TaskCardScroller() {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs text-muted uppercase tracking-wider">Today's tasks</div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={goPrev}
-            disabled={!prev}
-            className="w-7 h-7 rounded-full bg-surface border border-border/10 text-muted hover:text-text hover:border-border/30 disabled:opacity-30 disabled:hover:text-muted disabled:hover:border-border/10 flex items-center justify-center transition-colors duration-80"
-            aria-label="Previous task"
-          >
-            <ChevronUp className="w-4 h-4" strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            onClick={goNext}
-            disabled={!next}
-            className="w-7 h-7 rounded-full bg-surface border border-border/10 text-muted hover:text-text hover:border-border/30 disabled:opacity-30 disabled:hover:text-muted disabled:hover:border-border/10 flex items-center justify-center transition-colors duration-80"
-            aria-label="Next task"
-          >
-            <ChevronDown className="w-4 h-4" strokeWidth={2} />
-          </button>
+        <div className="text-[11px] text-muted tabular-nums">
+          {activeIdx + 1} / {visibleItems.length}
         </div>
       </div>
 
@@ -369,7 +363,7 @@ export function TaskCardScroller() {
                 item={active}
                 onTap={() => handleActiveTap(active)}
                 onCompleteTap={() => handleComplete(active)}
-                onSwipeEnd={(info) => handleSwipeEnd(active, info)}
+                onSwipeEnd={(info) => handleDragEnd(active, info)}
               />
             </motion.div>
           </AnimatePresence>
@@ -441,13 +435,15 @@ function ActiveCard({ item, onTap, onCompleteTap, onSwipeEnd }: ActiveCardProps)
   return (
     <motion.button
       type="button"
-      drag="x"
-      dragConstraints={{ left: -120, right: 120 }}
-      dragElastic={0.18}
+      drag
+      dragDirectionLock
+      dragConstraints={{ left: -120, right: 120, top: -100, bottom: 100 }}
+      dragElastic={0.2}
+      dragSnapToOrigin
       onDragEnd={(_, info) => onSwipeEnd(info)}
       onClick={onTap}
       whileTap={{ scale: 0.985 }}
-      className="w-full text-left cursor-pointer"
+      className="w-full text-left cursor-pointer touch-pan-x"
       style={{ transformOrigin: 'center' }}
     >
       <TaskCardSurface
