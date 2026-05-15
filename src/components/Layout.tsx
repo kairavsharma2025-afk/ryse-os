@@ -17,6 +17,7 @@ import { RyseLogo } from '@/components/RyseLogo'
 import { TopBar } from '@/components/TopBar'
 import { QuickAddFab } from '@/components/quickadd/QuickAddFab'
 import { MobileMoreSheet } from '@/components/nav/MobileMoreSheet'
+import { NotificationsSheet } from '@/components/nav/NotificationsSheet'
 import {
   Home as HomeIcon,
   CalendarRange,
@@ -25,6 +26,7 @@ import {
   Compass,
   Settings as SettingsIcon,
   Bot,
+  Bell,
   LayoutGrid,
   type LucideIcon,
 } from 'lucide-react'
@@ -58,6 +60,7 @@ export function Layout() {
   const openAssistant = useAssistant((s) => s.setPanelOpen)
   const nav = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
 
   useReminderEngine()
 
@@ -225,6 +228,19 @@ export function Layout() {
             <div className="font-display font-bold tracking-tight">Ryse</div>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted">
+            <button
+              type="button"
+              onClick={() => setNotifOpen(true)}
+              className="relative text-text"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5" strokeWidth={1.8} />
+              {(unread > 0 || dueSoon > 0) && (
+                <span className="absolute -top-1.5 -right-1.5 text-[9px] bg-accent text-white px-1 rounded-full font-bold leading-tight min-w-[14px] text-center">
+                  {unread + dueSoon}
+                </span>
+              )}
+            </button>
             <button onClick={() => openAssistant(true)} className="text-accent" aria-label="Assistant">
               <Bot className="w-5 h-5" />
             </button>
@@ -341,6 +357,7 @@ export function Layout() {
       </button>
 
       <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} />
       <SmartNudge />
       <AssistantPanel />
       <QuickAddFab />
