@@ -66,14 +66,31 @@ export function Home() {
   return (
     <div className="space-y-8">
       <Greeting name={name} />
-      <SmartBanner />
+
+      {/* SmartBanner is desktop-only: high-context priority alerts are noisy on
+          mobile where space is scarce. */}
+      <div className="hidden md:block">
+        <SmartBanner />
+      </div>
+
       <DailyBrief />
       <TaskCardScroller />
-      {timelinePromoted && <TimelineStrip />}
-      <AtAGlanceMetrics />
-      <RitualTimeline />
-      <DailyQuests />
-      <StreakDashboard />
+
+      {/* Timeline is always visible on mobile (user wanted scroller + timeline
+          as the two main cards). On desktop it stays auto-promoted. */}
+      <div className="md:hidden">
+        <TimelineStrip />
+      </div>
+      <div className="hidden md:block">{timelinePromoted && <TimelineStrip />}</div>
+
+      {/* Everything below is desktop-only — the mobile Home is intentionally
+          trimmed to greeting + brief + scroller + timeline. */}
+      <div className="hidden md:block space-y-8">
+        <AtAGlanceMetrics />
+        <RitualTimeline />
+        <DailyQuests />
+        <StreakDashboard />
+      </div>
     </div>
   )
 }

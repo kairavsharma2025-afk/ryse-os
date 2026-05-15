@@ -37,6 +37,10 @@ interface TodayItem {
   xp?: number
   done: boolean
   href?: string
+  // For quest-kind items only: id of the goal this quest is tied to (if any).
+  // Completing the quest also logs progress against this goal so the user
+  // doesn't have to log twice.
+  linkedGoalId?: string
 }
 
 const ENERGY_ICON: Record<ItemKind, typeof Zap> = {
@@ -118,6 +122,7 @@ export function TaskCardScroller() {
         category: linked?.area ?? null,
         xp: q.xpReward,
         done: !!q.completedAt,
+        linkedGoalId: linked?.id,
       })
     }
 
@@ -254,6 +259,12 @@ export function TaskCardScroller() {
     window.setTimeout(() => {
       if (item.kind === 'quest') {
         actionCompleteQuest(item.id.replace(/^quest:/, ''))
+        // Auto-log the linked goal so completing a quest off the scroller
+        // also feeds the goal's streak. actionLogGoal caps at one log per
+        // day so this is safe even if the user logs the goal again elsewhere.
+        if (item.linkedGoalId) {
+          actionLogGoal(item.linkedGoalId)
+        }
       } else if (item.kind === 'goal') {
         actionLogGoal(item.id.replace(/^goal:/, ''))
       }

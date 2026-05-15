@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCharacter } from '@/stores/characterStore'
 import { useSettings } from '@/stores/settingsStore'
 import { useNotifications } from '@/stores/notificationsStore'
@@ -16,6 +16,7 @@ import { Avatar } from '@/components/character/Avatar'
 import { RyseLogo } from '@/components/RyseLogo'
 import { TopBar } from '@/components/TopBar'
 import { QuickAddFab } from '@/components/quickadd/QuickAddFab'
+import { MobileMoreSheet } from '@/components/nav/MobileMoreSheet'
 import {
   Home as HomeIcon,
   CalendarRange,
@@ -24,6 +25,7 @@ import {
   Compass,
   Settings as SettingsIcon,
   Bot,
+  LayoutGrid,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -55,6 +57,7 @@ export function Layout() {
   const reminders = useReminders((s) => s.reminders)
   const openAssistant = useAssistant((s) => s.setPanelOpen)
   const nav = useNavigate()
+  const [moreOpen, setMoreOpen] = useState(false)
 
   useReminderEngine()
 
@@ -237,46 +240,92 @@ export function Layout() {
         </div>
       </main>
 
-      {/* Mobile bottom-tab bar — 5 icons, label only when active. */}
+      {/*
+        Mobile bottom-tab bar — three slots only (Home / More / Settings).
+        "More" opens a bottom sheet listing every other destination so the
+        thumb-reach navigation stays uncluttered. Desktop still gets the full
+        5-tab sidebar above.
+      */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur-xl border-t border-border/10 flex pb-[env(safe-area-inset-bottom)]">
-        {PRIMARY.map((n) => {
-          const Icon = n.icon
-          const badge = badgeFor(n.to)
-          return (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.to === '/'}
-              className={({ isActive }) =>
-                `flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors duration-80 ${
-                  isActive ? 'text-accent' : 'text-muted'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span className="relative">
-                    <Icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.7} />
-                    {badge > 0 && (
-                      <span className="absolute -top-1 -right-2 text-[9px] bg-accent text-white px-1 rounded-full font-bold leading-tight">
-                        {badge}
-                      </span>
-                    )}
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            `flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors duration-80 ${
+              isActive ? 'text-accent' : 'text-muted'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <span className="relative">
+                <HomeIcon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.7} />
+                {unread > 0 && (
+                  <span className="absolute -top-1 -right-2 text-[9px] bg-accent text-white px-1 rounded-full font-bold leading-tight">
+                    {unread}
                   </span>
-                  <span
-                    className={`text-[10px] transition-opacity duration-80 ${
-                      isActive ? 'opacity-100 font-medium' : 'opacity-0'
-                    }`}
-                  >
-                    {n.label}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          )
-        })}
+                )}
+              </span>
+              <span
+                className={`text-[10px] transition-opacity duration-80 ${
+                  isActive ? 'opacity-100 font-medium' : 'opacity-0'
+                }`}
+              >
+                Home
+              </span>
+            </>
+          )}
+        </NavLink>
+
+        <button
+          type="button"
+          onClick={() => setMoreOpen(true)}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors duration-80 ${
+            moreOpen ? 'text-accent' : 'text-muted'
+          }`}
+          aria-label="More"
+        >
+          <span className="relative">
+            <LayoutGrid className="w-6 h-6" strokeWidth={moreOpen ? 2.2 : 1.7} />
+            {dueSoon > 0 && (
+              <span className="absolute -top-1 -right-2 text-[9px] bg-accent text-white px-1 rounded-full font-bold leading-tight">
+                {dueSoon}
+              </span>
+            )}
+          </span>
+          <span
+            className={`text-[10px] transition-opacity duration-80 ${
+              moreOpen ? 'opacity-100 font-medium' : 'opacity-0'
+            }`}
+          >
+            More
+          </span>
+        </button>
+
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 transition-colors duration-80 ${
+              isActive ? 'text-accent' : 'text-muted'
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <SettingsIcon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.7} />
+              <span
+                className={`text-[10px] transition-opacity duration-80 ${
+                  isActive ? 'opacity-100 font-medium' : 'opacity-0'
+                }`}
+              >
+                Settings
+              </span>
+            </>
+          )}
+        </NavLink>
       </nav>
 
+      <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
       <SmartNudge />
       <AssistantPanel />
       <QuickAddFab />

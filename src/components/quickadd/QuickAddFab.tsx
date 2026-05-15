@@ -61,7 +61,7 @@ export function QuickAddFab() {
         transition={{ duration: 0.08 }}
         onClick={() => setOpen(true)}
         aria-label="Quick add"
-        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 w-14 h-14 rounded-full bg-accent text-white shadow-elevated flex items-center justify-center hover:bg-accent2 transition-colors duration-80"
+        className="fixed bottom-20 left-4 md:left-auto md:right-8 md:bottom-8 z-50 w-14 h-14 rounded-full bg-accent text-white shadow-elevated flex items-center justify-center hover:bg-accent2 transition-colors duration-80"
       >
         <Plus className="w-6 h-6" strokeWidth={2.2} />
       </motion.button>
