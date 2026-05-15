@@ -47,23 +47,55 @@ const ENERGY_ICON: Record<ItemKind, typeof Zap> = {
 }
 
 // Stack geometry — tuned so a 144px card sits centered in a 220px frame with
-// roughly a 28px peek of the prev/next card at either edge after scale(0.88).
+// roughly a 35px peek of the prev/next card at either edge after scale(0.88).
 const STACK_H = 220
 const CARD_H = 144
-const PEEK_OFFSET = 152
+const PEEK_OFFSET = 138
 const PEEK_SCALE = 0.88
 const PEEK_BLUR = 5
-const PEEK_OPACITY = 0.4
+const PEEK_OPACITY = 0.42
 
-// rotateX (not rotateY) — the card tilts top-down like a card flipping off a
-// deck, instead of swinging open like a door. The exiting card pitches
-// forward (positive rotateX), and the new one rises from below the plane
-// (negative rotateX → 0).
+interface ActiveTransition {
+  // Completion flips the card backward; plain navigation slides it.
+  mode: 'flip' | 'slide'
+  // +1 = moving forward in time (next task), -1 = backward (previous task).
+  dir: 1 | -1
+}
+
+// rotateX (not rotateY) — the card tilts top-down like a deck flip rather than
+// swinging open like a door. For plain nav, mode === 'slide' produces a clean
+// vertical translate so chevron/peek taps don't flip the card.
 const ACTIVE_VARIANTS: Variants = {
-  enter: { rotateX: -90, opacity: 0 },
-  center: { rotateX: 0, opacity: 1 },
-  exit: (mode: 'flip' | 'slide') =>
-    mode === 'flip' ? { rotateX: 90, opacity: 0 } : { opacity: 0, y: -8 },
+  enter: (t: ActiveTransition) =>
+    t.mode === 'flip'
+      ? { rotateX: -90, opacity: 0, y: 0 }
+      : { opacity: 0, y: 24 * t.dir },
+  center: { rotateX: 0, opacity: 1, y: 0 },
+  exit: (t: ActiveTransition) =>
+    t.mode === 'flip'
+      ? { rotateX: 90, opacity: 0, y: 0 }
+      : { opacity: 0, y: -24 * t.dir },
+}
+
+// Picks the next-upcoming timed task as the default active card, so the front
+// of the deck is whatever's coming up — not the earliest task of the day,
+// which is usually already in the past.
+function findInitialActiveIdx(items: TodayItem[]): number {
+  if (items.length === 0) return 0
+  const now = new Date()
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+  for (let i = 0; i < items.length; i++) {
+    const t = items[i].time
+    if (!t) continue
+    const [h, m] = t.split(':').map(Number)
+    if (h * 60 + m >= nowMin) return i
+  }
+  // No upcoming timed item — fall back to the first untimed one (they sort
+  // after all timed items), then to index 0.
+  for (let i = 0; i < items.length; i++) {
+    if (!items[i].time) return i
+  }
+  return 0
 }
 
 export function TaskCardScroller() {
@@ -145,21 +177,28 @@ export function TaskCardScroller() {
   )
   const doneCount = allItems.length - allItems.filter((i) => !i.done).length
 
-  const [activeIdx, setActiveIdx] = useState(0)
-  // Tracks whether the most recent active-slot change was caused by a
-  // completion (use the flip exit) or by navigation (use a slide exit).
-  const [exitMode, setExitMode] = useState<'flip' | 'slide'>('slide')
+  // Tracking by id (not idx) so the right card stays "active" even when the
+  // visible list changes underneath us — adds, removes, completions.
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [transition, setTransition] = useState<ActiveTransition>({ mode: 'slide', dir: 1 })
 
-  // Clamp activeIdx when the visible list shrinks (e.g. after completion).
+  const activeIdx = useMemo(() => {
+    if (activeId) {
+      const idx = visibleItems.findIndex((i) => i.id === activeId)
+      if (idx >= 0) return idx
+    }
+    return findInitialActiveIdx(visibleItems)
+  }, [visibleItems, activeId])
+
+  // Keep activeId in sync with the resolved idx so subsequent re-renders
+  // don't keep falling back to "next upcoming" after the user has navigated.
   useEffect(() => {
-    if (visibleItems.length === 0) {
-      setActiveIdx(0)
-      return
+    if (visibleItems.length === 0) return
+    const resolved = visibleItems[activeIdx]?.id
+    if (resolved && resolved !== activeId) {
+      setActiveId(resolved)
     }
-    if (activeIdx >= visibleItems.length) {
-      setActiveIdx(visibleItems.length - 1)
-    }
-  }, [visibleItems.length, activeIdx])
+  }, [activeIdx, visibleItems, activeId])
 
   if (allItems.length === 0) {
     return (
@@ -191,18 +230,24 @@ export function TaskCardScroller() {
 
   function goPrev() {
     if (activeIdx <= 0) return
-    setExitMode('slide')
-    setActiveIdx(activeIdx - 1)
+    setTransition({ mode: 'slide', dir: -1 })
+    setActiveId(visibleItems[activeIdx - 1].id)
   }
   function goNext() {
     if (activeIdx >= visibleItems.length - 1) return
-    setExitMode('slide')
-    setActiveIdx(activeIdx + 1)
+    setTransition({ mode: 'slide', dir: 1 })
+    setActiveId(visibleItems[activeIdx + 1].id)
   }
 
   function handleComplete(item: TodayItem) {
     if (item.done || pendingComplete.has(item.id)) return
-    setExitMode('flip')
+    setTransition({ mode: 'flip', dir: 1 })
+    // Point activeId at the task that *follows* the one being completed so the
+    // next-upcoming logic doesn't yank focus to an earlier card after the
+    // completed item gets filtered out.
+    const curIdx = visibleItems.findIndex((i) => i.id === item.id)
+    const successor = visibleItems[curIdx + 1] ?? visibleItems[curIdx - 1] ?? null
+    setActiveId(successor?.id ?? null)
     setPendingComplete((p) => new Set(p).add(item.id))
     // Let the flip play out; dispatch the real store action partway through so
     // the underlying data settles before the pending mask is lifted.
@@ -294,15 +339,15 @@ export function TaskCardScroller() {
             transformStyle: 'preserve-3d',
           }}
         >
-          <AnimatePresence mode="popLayout" initial={false} custom={exitMode}>
+          <AnimatePresence mode="popLayout" initial={false} custom={transition}>
             <motion.div
               key={active.id}
-              custom={exitMode}
+              custom={transition}
               variants={ACTIVE_VARIANTS}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ duration: 0.42, ease: [0.4, 0, 0.2, 1] }}
               style={{
                 transformStyle: 'preserve-3d',
                 transformOrigin: 'center',
