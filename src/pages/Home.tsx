@@ -10,7 +10,7 @@ import { Sparkles, Swords } from 'lucide-react'
 
 import { SmartBanner } from '@/components/home/SmartBanner'
 import { DailyBrief } from '@/components/home/DailyBrief'
-import { TodayTaskList } from '@/components/home/TodayTaskList'
+import { TaskCardScroller } from '@/components/home/TaskCardScroller'
 import { TimelineStrip } from '@/components/home/TimelineStrip'
 import { AtAGlanceMetrics } from '@/components/home/AtAGlanceMetrics'
 import { RitualTimeline } from '@/components/home/RitualTimeline'
@@ -81,8 +81,8 @@ export function Home() {
       {/* Proactive AI suggestion — dismissible per day. */}
       <AiSuggestionChip />
 
-      {/* Vertical task list — replaces the horizontal swipe deck. */}
-      <TodayTaskList />
+      {/* Today's tasks — 3D card stack with prev/next peeks. */}
+      <TaskCardScroller />
 
       {/* Timeline is always visible on mobile. On desktop it stays auto-promoted. */}
       <div className="md:hidden">
