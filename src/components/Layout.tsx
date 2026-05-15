@@ -325,6 +325,21 @@ export function Layout() {
         </NavLink>
       </nav>
 
+      {/*
+        Mobile-only AI assistant FAB. Sits opposite the bottom-tab "More"
+        slot at the bottom-right corner so it's always one thumb-tap away
+        from any screen. Desktop has the Ask Assistant rail entry in the
+        sidebar instead.
+      */}
+      <button
+        type="button"
+        onClick={() => openAssistant(true)}
+        aria-label="Ask Assistant"
+        className="md:hidden fixed right-4 bottom-20 z-50 w-14 h-14 rounded-full bg-accent text-white shadow-elevated flex items-center justify-center hover:bg-accent2 active:scale-95 transition-all duration-80"
+      >
+        <Bot className="w-6 h-6" strokeWidth={2.1} />
+      </button>
+
       <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
       <SmartNudge />
       <AssistantPanel />

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Plus, Mic, Calendar as CalendarIcon, Bell, Zap, Loader2 } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Button } from '@/components/ui/Button'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
 import { useSchedule } from '@/stores/scheduleStore'
 import { useReminders } from '@/stores/remindersStore'
 import { useTasks } from '@/stores/tasksStore'
@@ -61,7 +62,7 @@ export function QuickAddFab() {
         transition={{ duration: 0.08 }}
         onClick={() => setOpen(true)}
         aria-label="Quick add"
-        className="fixed bottom-20 left-4 md:left-auto md:right-8 md:bottom-8 z-50 w-14 h-14 rounded-full bg-accent text-white shadow-elevated flex items-center justify-center hover:bg-accent2 transition-colors duration-80"
+        className="hidden md:flex fixed md:right-8 md:bottom-8 z-50 w-14 h-14 rounded-full bg-accent text-white shadow-elevated items-center justify-center hover:bg-accent2 transition-colors duration-80"
       >
         <Plus className="w-6 h-6" strokeWidth={2.2} />
       </motion.button>
@@ -163,6 +164,7 @@ function parseQuickInput(input: string): ParseResult {
 function QuickAddSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState('')
+  const [interim, setInterim] = useState('')
   const [category, setCategory] = useState<AreaId>('career')
   const [date, setDate] = useState<string>(todayISO())
   const [time, setTime] = useState<string>('')
@@ -177,6 +179,7 @@ function QuickAddSheet({ open, onClose }: { open: boolean; onClose: () => void }
   useEffect(() => {
     if (!open) return
     setText('')
+    setInterim('')
     setTime('')
     setDate(todayISO())
     setPriority(2)
@@ -256,18 +259,29 @@ function QuickAddSheet({ open, onClose }: { open: boolean; onClose: () => void }
       <div className="px-5 pb-6 pt-2 space-y-4">
         <div>
           <label className="text-xs text-muted block mb-1.5">What do you want to do?</label>
-          <input
-            ref={inputRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void save()
-            }}
-            placeholder="e.g. Gym tomorrow 7am · Remind me to call Mom 8pm"
-            className="w-full bg-surface2 border border-border/10 rounded-xl px-4 py-3 text-md focus:outline-none focus:border-accent transition-colors duration-80"
-          />
-          <div className="text-[11px] text-muted mt-1.5">
-            Tip: include a day ("tomorrow") and a time ("7am") and we'll book it.
+          <div className="relative">
+            <input
+              ref={inputRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void save()
+              }}
+              placeholder="e.g. Gym tomorrow 7am · Remind me to call Mom 8pm"
+              className="w-full bg-surface2 border border-border/10 rounded-xl px-4 py-3 pr-12 text-md focus:outline-none focus:border-accent transition-colors duration-80"
+            />
+            <VoiceInputButton
+              onTranscript={(t) => setText((prev) => (prev ? `${prev} ${t}` : t))}
+              onInterim={setInterim}
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+            />
+          </div>
+          <div className="text-[11px] text-muted mt-1.5 min-h-[1em]">
+            {interim ? (
+              <span className="text-accent italic">{interim}</span>
+            ) : (
+              <span>Tip: include a day ("tomorrow") and a time ("7am") and we'll book it.</span>
+            )}
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from '../ui/Button'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
 import type { AreaId, BossBattleConfig, Goal, QuestType } from '@/types'
 import { AREA_LIST } from '@/data/areas'
 import { useGoals } from '@/stores/goalsStore'
@@ -25,6 +26,7 @@ export function GoalForm({ goal, onDone }: Props) {
   const [priority, setPriority] = useState<1 | 2 | 3>(goal?.priority ?? 2)
   const [isBoss, setIsBoss] = useState(goal?.isBossBattle ?? false)
   const [bossName, setBossName] = useState(goal?.bossBattleConfig?.bossName ?? '')
+  const [interim, setInterim] = useState('')
 
   const submit = () => {
     if (!title.trim()) return
@@ -108,12 +110,23 @@ export function GoalForm({ goal, onDone }: Props) {
       </div>
       <div>
         <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">Title</div>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 focus:outline-none focus:border-accent"
-          placeholder="e.g. Hit the gym 4× a week"
-        />
+        <div className="relative">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-surface2 border border-border rounded-lg px-3 py-2 pr-11 focus:outline-none focus:border-accent"
+            placeholder="e.g. Hit the gym 4× a week"
+          />
+          <VoiceInputButton
+            onTranscript={(t) => setTitle((prev) => (prev ? `${prev} ${t}` : t))}
+            onInterim={setInterim}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2"
+            size="sm"
+          />
+        </div>
+        {interim && (
+          <div className="text-[11px] text-accent italic mt-1">{interim}</div>
+        )}
       </div>
       <div>
         <div className="text-[10px] uppercase tracking-wide text-muted mb-1.5">Description</div>
