@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "crons": [
-    { "path": "/api/cron/push-dispatch", "schedule": "* * * * *" }
+    { "path": "/api/cron/push-dispatch", "schedule": "0 9 * * *" }
   ],
   "headers": [
     {
