@@ -14,6 +14,30 @@ import type { Reminder } from '@/types'
 export const isNative = () => Capacitor.isNativePlatform()
 const isAndroid = () => Capacitor.getPlatform() === 'android'
 
+// Android 8+ requires a notification channel for anything that should pop a
+// heads-up + play sound. Importance 5 = HIGH, 4 = DEFAULT. We pick 5 so a
+// reminder is impossible to miss when the screen is locked.
+const REMINDER_CHANNEL_ID = 'ryse-reminders'
+let channelEnsured = false
+async function ensureChannel(): Promise<void> {
+  if (!isAndroid() || channelEnsured) return
+  try {
+    await LocalNotifications.createChannel({
+      id: REMINDER_CHANNEL_ID,
+      name: 'Reminders',
+      description: 'Reminders, routine pings, and birthdays.',
+      importance: 5,
+      visibility: 1,
+      sound: undefined,
+      vibration: true,
+      lights: true,
+    })
+    channelEnsured = true
+  } catch {
+    /* channel creation is best-effort; default channel still works */
+  }
+}
+
 type Every = 'day' | 'week' | 'month' | 'year'
 
 const REPEAT_TO_EVERY: Partial<Record<Reminder['repeat'], Every>> = {
@@ -145,17 +169,25 @@ export async function syncNativeNotifications(): Promise<void> {
   running = true
   try {
     if (!(await ensurePermission())) return
+    await ensureChannel()
     const pending = await LocalNotifications.getPending()
     if (pending.notifications.length) {
       await LocalNotifications.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) })
     }
     const items = buildSchedule()
+    const android = isAndroid()
     if (items.length) {
       await LocalNotifications.schedule({
         notifications: items.map((it) => ({
           id: it.id,
           title: it.title,
           body: it.body,
+          // Use the high-importance Reminders channel on Android so reminders
+          // light up the screen + play sound. iOS ignores this field.
+          channelId: android ? REMINDER_CHANNEL_ID : undefined,
+          // Make sure the notification ticks the user even from quiet modes
+          // by setting importance/sound where the plugin supports it.
+          sound: undefined,
           schedule: { at: it.at, allowWhileIdle: true, ...(it.every ? { every: it.every } : {}) },
         })),
       })
@@ -178,4 +210,37 @@ if (typeof window !== 'undefined') {
   useSettings.subscribe((s, prev) => {
     if (s.birthdayNotifications !== prev.birthdayNotifications) void syncNativeNotifications()
   })
+}
+
+/**
+ * Fires a test notification ~5 seconds in the future. Used from Settings so a
+ * user can confirm OS-level delivery is wired up (permission granted, channel
+ * created, battery optimisation not killing the app) without having to wait
+ * for a real reminder.
+ *
+ * Returns:
+ *   - 'fired'        — successfully scheduled
+ *   - 'denied'       — OS-level permission missing
+ *   - 'unsupported'  — running on web (use the Browser Notification API instead)
+ */
+export async function sendTestNotification(): Promise<'fired' | 'denied' | 'unsupported'> {
+  if (!isNative()) return 'unsupported'
+  if (!(await ensurePermission())) return 'denied'
+  await ensureChannel()
+  try {
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: 99_999_999,
+          title: '✅ Ryse test',
+          body: 'If you see this on your lock screen, background notifications are working.',
+          channelId: isAndroid() ? REMINDER_CHANNEL_ID : undefined,
+          schedule: { at: new Date(Date.now() + 5_000), allowWhileIdle: true },
+        },
+      ],
+    })
+    return 'fired'
+  } catch {
+    return 'denied'
+  }
 }

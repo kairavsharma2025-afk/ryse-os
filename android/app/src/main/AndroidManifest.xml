@@ -43,4 +43,16 @@
          alarm/reminder/calendar app per Play Store policy. SCHEDULE_EXACT_ALARM covers API 31–32. -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Android 13+ runtime notification permission. Declared explicitly so Play Store
+         validation + manifest merger never silently drop it. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Reschedule pending notifications after a device reboot. Without this every
+         restart wipes the AlarmManager queue and reminders silently stop. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Wake the device long enough to deliver a heads-up notification from Doze. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Lets the user disable battery optimisation for Ryse so the OS stops killing it
+         before scheduled fires. We don't auto-request it (Play Store policy); the
+         Settings page links the user to the system page for it. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>

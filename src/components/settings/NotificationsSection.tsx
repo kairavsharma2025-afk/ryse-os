@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { differenceInCalendarDays, format } from 'date-fns'
-import { Bell, Cake, Moon, ArrowRight } from 'lucide-react'
+import { Bell, Cake, Moon, ArrowRight, BellRing, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Toggle'
 import { useSettings } from '@/stores/settingsStore'
 import { useBirthdays } from '@/stores/birthdaysStore'
 import { SettingsSection } from './SettingsSection'
+import { isNative, sendTestNotification } from '@/engine/nativeNotifications'
 
 const daysInMonth = (year: number, m1to12: number) => new Date(year, m1to12, 0).getDate()
 
@@ -49,6 +50,28 @@ export function NotificationsSection() {
     settings.set('notifications', r === 'granted' ? 'granted' : 'denied')
   }
 
+  const native = isNative()
+  const [testState, setTestState] = useState<'idle' | 'firing' | 'fired' | 'denied'>('idle')
+  const fireTest = async () => {
+    setTestState('firing')
+    if (native) {
+      const r = await sendTestNotification()
+      setTestState(r === 'fired' ? 'fired' : 'denied')
+    } else {
+      // Web — fire a Notification API ping immediately.
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        setTestState('denied')
+      } else {
+        new Notification('✅ Ryse test', {
+          body: 'Background notifications are wired up.',
+          icon: '/pwa-192.png',
+        })
+        setTestState('fired')
+      }
+    }
+    window.setTimeout(() => setTestState('idle'), 6_000)
+  }
+
   return (
     <SettingsSection
       id="notifications"
@@ -57,17 +80,63 @@ export function NotificationsSection() {
       description="How and when Ryse is allowed to interrupt you."
     >
       <div className="space-y-5">
+        {/* Native — Android/iOS local-notification status. Shown only on the
+            installed apps; the web build sees the browser permission row below. */}
+        {native && (
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-2 inline-flex items-center gap-1.5">
+              <Smartphone className="w-3.5 h-3.5 text-accent" />
+              Background notifications
+            </div>
+            <div className="text-sm leading-relaxed">
+              Ryse schedules reminders as OS alarms so they fire even when the app is closed.
+              If you're not seeing them:
+            </div>
+            <ul className="text-[11px] text-muted leading-relaxed mt-2 list-disc list-inside space-y-0.5">
+              <li>Open <span className="text-text">Phone settings → Apps → Ryse → Notifications</span> and make sure they're <span className="text-text">Allowed</span>.</li>
+              <li>Then <span className="text-text">Apps → Ryse → Battery</span> → set to <span className="text-text">Unrestricted</span> so Android doesn't kill us before fires.</li>
+              <li>On Android 12+: <span className="text-text">Apps → Ryse → Alarms &amp; reminders</span> must be on.</li>
+            </ul>
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <Button size="sm" onClick={fireTest} disabled={testState === 'firing'}>
+                <BellRing className="w-3.5 h-3.5" />
+                {testState === 'firing' ? 'Scheduling…' : 'Send a test in 5s'}
+              </Button>
+              {testState === 'fired' && (
+                <span className="text-[11px] text-success">Scheduled — lock your phone now.</span>
+              )}
+              {testState === 'denied' && (
+                <span className="text-[11px] text-danger">Permission denied — enable in phone settings.</span>
+              )}
+            </div>
+          </div>
+        )}
+        {native && <hr className="border-border/30" />}
+
         {/* Browser permission row */}
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted mb-2">
-            Desktop pings
+            {native ? 'In-app pings' : 'Desktop pings'}
           </div>
           {notifPerm === 'granted' ? (
             <div className="text-sm">
               Status: <span className="text-accent2">Active</span>
               <div className="text-[11px] text-muted mt-0.5">
-                Desktop pings on for reminders. In-app notifications always work too.
+                {native
+                  ? 'Both lock-screen and in-app pings on.'
+                  : 'Desktop pings on for reminders. In-app notifications always work too.'}
               </div>
+              {!native && (
+                <div className="mt-3">
+                  <Button size="sm" variant="ghost" onClick={fireTest}>
+                    <BellRing className="w-3.5 h-3.5" />
+                    Send a test now
+                  </Button>
+                  {testState === 'fired' && (
+                    <span className="text-[11px] text-success ml-2">Sent.</span>
+                  )}
+                </div>
+              )}
             </div>
           ) : notifPerm === 'denied' ? (
             <div className="space-y-2">

@@ -1,0 +1,46 @@
+name: push-cron
+
+# Free-tier workaround for the Vercel Hobby cron limit (1/day). GitHub
+# Actions runs this every 5 minutes (the minimum schedule granularity that
+# GH respects) and hits the dispatch endpoint, which in turn delivers any
+# web pushes whose fire_at has arrived. Manual runs supported via the
+# Actions tab → "Run workflow".
+#
+# Required repository secrets:
+#   PUSH_DISPATCH_URL — e.g. https://ryse-os.vercel.app/api/cron/push-dispatch
+#   CRON_SECRET       — must match the CRON_SECRET env var on the Vercel project
+#
+# If either secret is missing the workflow skips silently so a freshly forked
+# repo doesn't show a red X on every run until setup is complete.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: push-cron
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit /api/cron/push-dispatch
+        env:
+          PUSH_DISPATCH_URL: ${{ secrets.PUSH_DISPATCH_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$PUSH_DISPATCH_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::notice::PUSH_DISPATCH_URL or CRON_SECRET secret not set — skipping."
+            exit 0
+          fi
+          # -fsSL + status check so transient 5xx surfaces as a workflow failure.
+          # Body is small JSON; tee it to the run log for forensics.
+          curl -fsSL -X POST "$PUSH_DISPATCH_URL" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "User-Agent: ryse-gh-push-cron" \
+            -w "\nHTTP %{http_code}\n"
