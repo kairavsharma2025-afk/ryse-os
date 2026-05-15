@@ -38,4 +38,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Reminders & birthdays — exact alarms so notifications fire from Doze when the app is closed.
+         USE_EXACT_ALARM is auto-granted (Android 13+) and is the right permission for an
+         alarm/reminder/calendar app per Play Store policy. SCHEDULE_EXACT_ALARM covers API 31–32. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 </manifest>

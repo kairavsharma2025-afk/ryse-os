@@ -4,13 +4,15 @@
 
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { addDays, format } from 'date-fns'
 import { useReminders } from '@/stores/remindersStore'
 import { useBirthdays } from '@/stores/birthdaysStore'
 import { useSettings } from '@/stores/settingsStore'
-import { nextFireTime } from './remindersEngine'
+import { fireTimeOn, nextFireTime, occursOn } from './remindersEngine'
 import type { Reminder } from '@/types'
 
 export const isNative = () => Capacitor.isNativePlatform()
+const isAndroid = () => Capacitor.getPlatform() === 'android'
 
 type Every = 'day' | 'week' | 'month' | 'year'
 
@@ -40,6 +42,25 @@ function nextBirthdayDate(b: { month: number; day: number }, from: Date): Date {
   return d
 }
 
+// Walks the next `max` future occurrences of `r` from `from`.
+function collectOccurrences(
+  r: Reminder,
+  from: Date,
+  qh: { from: string; to: string } | undefined,
+  max: number,
+): Date[] {
+  const out: Date[] = []
+  for (let off = -1; off <= 400 && out.length < max; off++) {
+    const iso = format(addDays(from, off), 'yyyy-MM-dd')
+    if (!occursOn(r, iso)) continue
+    const at = fireTimeOn(r, iso, qh)
+    if (at.getTime() < from.getTime() - 60_000) continue
+    out.push(at)
+    if (r.repeat === 'once') break
+  }
+  return out
+}
+
 interface ScheduledItem {
   id: number
   title: string
@@ -51,27 +72,47 @@ interface ScheduledItem {
 function buildSchedule(): ScheduledItem[] {
   const now = new Date()
   const quietHours = useSettings.getState().quietHours
+  const android = isAndroid()
   const out: ScheduledItem[] = []
   for (const r of useReminders.getState().reminders) {
     if (r.done) continue
-    const at = nextFireTime(r, now, quietHours)
-    if (!at) continue
-    out.push({
-      id: hashId(`r:${r.id}`),
-      title: `⏰ ${r.title}`,
-      body: r.notes || 'Reminder',
-      at,
-      every: r.snoozedUntil ? undefined : REPEAT_TO_EVERY[r.repeat],
-    })
+    const every = r.snoozedUntil ? undefined : REPEAT_TO_EVERY[r.repeat]
+    if (android && every) {
+      // Doze workaround: passing `every` to the plugin makes it call AlarmManager.setRepeating,
+      // which is suspended during Doze and won't fire when the app is closed/phone is idle.
+      // Expand into one-shot occurrences so the plugin uses setExactAndAllowWhileIdle instead.
+      const occs = collectOccurrences(r, now, quietHours, 7)
+      for (const at of occs) {
+        out.push({
+          id: hashId(`r:${r.id}:${at.getTime()}`),
+          title: `⏰ ${r.title}`,
+          body: r.notes || 'Reminder',
+          at,
+        })
+      }
+    } else {
+      const at = nextFireTime(r, now, quietHours)
+      if (!at) continue
+      out.push({
+        id: hashId(`r:${r.id}`),
+        title: `⏰ ${r.title}`,
+        body: r.notes || 'Reminder',
+        at,
+        every,
+      })
+    }
   }
   if (useSettings.getState().birthdayNotifications) {
     for (const b of useBirthdays.getState().birthdays) {
+      const at = nextBirthdayDate(b, now)
       out.push({
         id: hashId(`b:${b.id}`),
         title: `🎂 ${b.name}’s birthday`,
         body: b.relation ? `Reach out — ${b.relation}.` : `Reach out to ${b.name}.`,
-        at: nextBirthdayDate(b, now),
-        every: 'year',
+        at,
+        // On Android we re-schedule on every app open, so one-shot is fine. On iOS the yearly
+        // repeat is honoured natively by UNCalendarNotificationTrigger.
+        every: android ? undefined : 'year',
       })
     }
   }
