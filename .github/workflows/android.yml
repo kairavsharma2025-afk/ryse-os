@@ -23,6 +23,9 @@ on:
       - '.github/workflows/android.yml'
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -90,3 +93,21 @@ jobs:
             /tmp/03-gradle.log
           if-no-files-found: warn
           retention-days: 14
+
+      # Publish the APK to a "latest-android" rolling Release so it's downloadable
+      # straight from a phone browser — no GitHub login required, just open the
+      # link and tap-install.
+      - name: Stage APK for release
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ./ryse.apk
+
+      - name: Publish rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-android
+          name: Latest Android build
+          body: |
+            Debug-signed APK auto-built from `${{ github.sha }}`.
+            Tap the asset below from your phone browser to download and install.
+          files: ryse.apk
+          prerelease: false
+          make_latest: false
