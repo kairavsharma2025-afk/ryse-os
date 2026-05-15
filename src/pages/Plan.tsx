@@ -63,6 +63,25 @@ export function Plan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view])
 
+  // Keyboard shortcuts: 1–5 jump between Day/Week/Matrix/Inbox/Notes. Ignored
+  // when typing in an input/textarea or when a modifier is held so we don't
+  // step on the browser/OS shortcuts.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+      const tag = (e.target as HTMLElement | null)?.tagName ?? ''
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement | null)?.isContentEditable) {
+        return
+      }
+      const idx = Number(e.key) - 1
+      if (Number.isInteger(idx) && idx >= 0 && idx < VIEWS.length) {
+        setView(VIEWS[idx].id)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+
   // Inbox/Notes badge counts in the segmented control.
   const inboxCount = useTasks((s) => s.tasks.filter((t) => !t.completedAt && !t.assignedTo).length)
   const noteCount = useNotes((s) => s.notes.length)
@@ -89,7 +108,7 @@ export function Plan() {
           aria-label="Plan view"
           className="inline-flex p-1 rounded-xl bg-surface2/50 border border-border/10 gap-0.5"
         >
-          {VIEWS.map((v) => {
+          {VIEWS.map((v, i) => {
             const Icon = v.icon
             const active = view === v.id
             const count = badge[v.id]
@@ -99,6 +118,7 @@ export function Plan() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setView(v.id)}
+                title={`${v.label} (press ${i + 1})`}
                 className={`px-3 h-9 rounded-lg text-sm transition-colors duration-80 flex items-center gap-1.5 whitespace-nowrap ${
                   active
                     ? 'bg-accent text-white font-semibold shadow-card'
@@ -107,6 +127,14 @@ export function Plan() {
               >
                 <Icon className="w-4 h-4" strokeWidth={active ? 2.2 : 1.8} />
                 {v.label}
+                <kbd
+                  className={`hidden sm:inline-flex items-center justify-center w-4 h-4 text-[9px] rounded font-mono ${
+                    active ? 'bg-white/25 text-white' : 'bg-surface2 text-muted/80 border border-border/30'
+                  }`}
+                  aria-hidden="true"
+                >
+                  {i + 1}
+                </kbd>
                 {!!count && (
                   <span
                     className={`text-[10px] px-1 rounded-full font-bold ${

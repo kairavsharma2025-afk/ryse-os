@@ -29,7 +29,7 @@ export function RitualSteps({ math }: { math: RitualMath }) {
               <motion.button
                 whileTap={{ scale: 0.985 }}
                 onClick={() => actionRitualToggle(s.id)}
-                className={`w-full text-left rounded-xl border px-3 py-2.5 transition-colors flex items-center gap-3 ${
+                className={`group w-full text-left rounded-xl border px-3 py-2.5 transition-colors duration-150 flex items-center gap-3 hover:bg-surface2/60 ${
                   isDone
                     ? 'border-border/30 bg-surface2/20 opacity-70'
                     : isUpNext
@@ -37,6 +37,22 @@ export function RitualSteps({ math }: { math: RitualMath }) {
                       : 'border-border/40 bg-surface2/30 hover:border-accent/30'
                 }`}
               >
+                {/* Numbered step circle — fills success-green when done,
+                    outlined accent when up-next, plain border otherwise. */}
+                <span
+                  className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold tabular-nums border-2 transition-colors ${
+                    isDone
+                      ? 'bg-success border-success text-white'
+                      : isUpNext
+                        ? 'border-accent text-accent bg-accent/10'
+                        : 'border-border/60 text-muted bg-transparent'
+                  }`}
+                  aria-hidden="true"
+                >
+                  {isDone ? <Check className="w-4 h-4" strokeWidth={2.6} /> : i + 1}
+                </span>
+
+                {/* Step icon — kept as the secondary visual hook. */}
                 <span
                   className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${
                     isDone
@@ -48,6 +64,7 @@ export function RitualSteps({ math }: { math: RitualMath }) {
                 >
                   {Icon && <Icon className="w-5 h-5" strokeWidth={1.7} />}
                 </span>
+
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span
@@ -69,21 +86,12 @@ export function RitualSteps({ math }: { math: RitualMath }) {
                 </div>
                 <SevenDayStrip stepId={s.id} math={math} />
                 <div
-                  className={`shrink-0 text-[11px] tabular-nums font-bold ${
-                    isDone ? 'text-muted' : 'text-accent2'
+                  className={`shrink-0 text-[11px] tabular-nums font-bold text-reward ${
+                    isDone ? 'opacity-50' : ''
                   }`}
                 >
-                  +{s.xpReward}
+                  +{s.xpReward} XP
                 </div>
-                <span
-                  className={`shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                    isDone
-                      ? 'bg-accent border-accent text-white'
-                      : 'border-border text-transparent group-hover:border-accent'
-                  }`}
-                >
-                  <Check className="w-3 h-3" strokeWidth={2.5} />
-                </span>
               </motion.button>
             </li>
           )

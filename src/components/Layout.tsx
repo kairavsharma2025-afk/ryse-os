@@ -11,10 +11,13 @@ import { upcomingReminders } from '@/engine/remindersEngine'
 import { useReminderEngine } from '@/hooks/useReminderEngine'
 import { CelebrationHost } from '@/components/celebrations/CelebrationHost'
 import { AssistantPanel } from '@/components/assistant/AssistantPanel'
+import { AiQuickInput } from '@/components/assistant/AiQuickInput'
 import { SmartNudge } from '@/components/assistant/SmartNudge'
 import { Avatar } from '@/components/character/Avatar'
 import { RyseLogo } from '@/components/RyseLogo'
 import { TopBar } from '@/components/TopBar'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { levelFromXp } from '@/engine/xpEngine'
 import { QuickAddFab } from '@/components/quickadd/QuickAddFab'
 import { MobileMoreSheet } from '@/components/nav/MobileMoreSheet'
 import { NotificationsSheet } from '@/components/nav/NotificationsSheet'
@@ -201,8 +204,8 @@ export function Layout() {
             onClick={() => openAssistant(true)}
             className="w-full flex items-center gap-3 px-3 h-11 rounded-xl text-sm text-muted hover:text-text hover:bg-surface2/60 transition-colors duration-80"
           >
-            <Bot className="w-5 h-5" />
-            <span>Ask Assistant</span>
+            <Sparkles className="w-5 h-5 text-ai" strokeWidth={1.9} />
+            <span>Ryse AI</span>
           </button>
           <NavLink
             to="/settings"
@@ -222,11 +225,33 @@ export function Layout() {
             className="w-full flex items-center gap-3 px-2 py-2 rounded-xl text-sm text-muted hover:text-text hover:bg-surface2/60 transition-colors duration-80 mt-1"
           >
             <Avatar id={character.avatar} className="w-8 h-8 border border-border/10 text-accent" />
-            <div className="leading-tight text-left min-w-0">
+            <div className="leading-tight text-left min-w-0 flex-1">
               <div className="text-text text-xs font-medium truncate">{character.name || 'Hero'}</div>
               <div className="text-[11px] text-muted truncate">
-                Lv {character.level} · {character.activeTitle}
+                Lv {character.level} ·{' '}
+                <Tooltip content="Your current life archetype. It evolves as you level up.">
+                  <span className="cursor-help underline decoration-dotted decoration-muted/40 underline-offset-2">
+                    {character.activeTitle}
+                  </span>
+                </Tooltip>
               </div>
+              {(() => {
+                const info = levelFromXp(character.xp)
+                const pct = info.xpForNextLevel === 0 ? 100 : (info.xpIntoLevel / info.xpForNextLevel) * 100
+                return (
+                  <div className="mt-1.5">
+                    <div className="h-1.5 rounded-full bg-surface2 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-[width] duration-500"
+                        style={{ width: `${pct}%`, background: 'rgb(var(--color-primary))' }}
+                      />
+                    </div>
+                    <div className="text-[10px] text-muted/80 tabular-nums mt-1 truncate">
+                      {info.xpIntoLevel} / {info.xpForNextLevel} XP to Lv {character.level + 1}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </button>
         </div>
@@ -265,8 +290,15 @@ export function Layout() {
 
         <TopBar />
 
-        <div className="px-4 pt-4 pb-32 md:px-8 md:pt-2 md:pb-12 max-w-6xl w-full mx-auto flex-1">
+        <div className="px-4 pt-4 pb-32 md:px-8 md:pt-2 md:pb-6 max-w-6xl w-full mx-auto flex-1">
           <Outlet />
+        </div>
+
+        {/* Persistent AI input. Sits above the mobile bottom-nav (extra
+            padding via pb-28 below) and at the bottom of the content area on
+            desktop. Opens the existing assistant panel — no duplicate logic. */}
+        <div className="px-4 md:px-8 pb-28 md:pb-6 max-w-6xl w-full mx-auto md:sticky md:bottom-0 md:bg-bg/70 md:backdrop-blur-md md:pt-3 md:border-t md:border-border/10">
+          <AiQuickInput />
         </div>
       </main>
 

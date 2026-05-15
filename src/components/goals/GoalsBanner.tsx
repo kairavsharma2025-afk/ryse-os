@@ -3,6 +3,7 @@ import { Flame, Skull, Target, Activity, Trophy } from 'lucide-react'
 import { useGoals } from '@/stores/goalsStore'
 import { useCharacter } from '@/stores/characterStore'
 import { daysBetween, todayISO } from '@/engine/dates'
+import { Tooltip } from '@/components/ui/Tooltip'
 import type { Goal } from '@/types'
 
 /**
@@ -64,18 +65,21 @@ export function GoalsBanner() {
         value={stats.longestFire}
         suffix={stats.longestFire > 0 ? 'd' : ''}
         tone={stats.longestFire >= 7 ? 'amber' : undefined}
+        tooltip="Your longest streak across any goal, ever."
       />
       <Stat
         icon={Skull}
         label="Bosses"
         value={stats.livingBosses}
         tone={stats.livingBosses > 0 ? 'red' : undefined}
+        tooltip="Goals you've promoted to boss battles — finite HP, daily attacks."
       />
       <Stat
         icon={Trophy}
         label="Near victory"
         value={stats.nearVictory}
         tone={stats.nearVictory > 0 ? 'success' : undefined}
+        tooltip="Goals ≥ 75% milestone-complete (or boss HP ≤ 25%)."
       />
       <Stat icon={Activity} label="Logs · 7d" value={stats.logsThisWeek} />
       <Stat
@@ -84,6 +88,7 @@ export function GoalsBanner() {
         emoji="🛡"
         tone={stats.atRisk > 0 ? 'amber' : undefined}
         sub={stats.atRisk > 0 ? `${stats.atRisk} at risk` : undefined}
+        tooltip="Shields protect your streak from a missed day. You earn one each month."
       />
     </div>
   )
@@ -97,6 +102,7 @@ function Stat({
   suffix,
   tone,
   sub,
+  tooltip,
 }: {
   icon?: typeof Flame
   emoji?: string
@@ -105,6 +111,7 @@ function Stat({
   suffix?: string
   tone?: 'amber' | 'red' | 'success'
   sub?: string
+  tooltip?: string
 }) {
   const valueColor =
     tone === 'amber'
@@ -114,9 +121,9 @@ function Stat({
         : tone === 'success'
           ? 'text-success'
           : 'text-text'
-  return (
-    <div className="rounded-2xl bg-surface border border-border/10 shadow-card px-3 py-2.5 flex flex-col">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted">
+  const body = (
+    <div className="rounded-2xl bg-surface border border-border/10 shadow-card px-3 py-2.5 flex flex-col w-full">
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-widest uppercase text-muted">
         {Icon ? <Icon className="w-3 h-3" strokeWidth={1.8} /> : <span>{emoji}</span>}
         <span>{label}</span>
       </div>
@@ -127,6 +134,14 @@ function Stat({
       {sub && <div className="text-[10px] text-muted/80 mt-1">{sub}</div>}
     </div>
   )
+  if (tooltip) {
+    return (
+      <Tooltip content={tooltip}>
+        <span className="block w-full cursor-help">{body}</span>
+      </Tooltip>
+    )
+  }
+  return body
 }
 
 // Re-export Goal-derived classifiers for the page filters so the categorisation

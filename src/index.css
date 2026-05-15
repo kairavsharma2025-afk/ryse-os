@@ -6,10 +6,29 @@
    These are the canonical Ryse design system tokens. Color tokens flip with
    theme/mode; everything below stays constant across themes. */
 :root {
+  /* Type families — Inter for UI, Cal Sans (fallback Plus Jakarta Sans, a bold
+     geometric sans) for display headings. Both Inter and Plus Jakarta Sans are
+     loaded in index.html via Google Fonts; Cal Sans is preferred if a local
+     install or CDN is wired up later. */
+  --font-display: 'Cal Sans', 'Plus Jakarta Sans', 'Inter', -apple-system, system-ui, sans-serif;
+  --font-ui:      'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+
   /* Status colors — same on light and dark, used for badges/banners/alerts. */
   --success: 48 209 88;     /* #30D158 */
   --warning: 255 159 10;    /* #FF9F0A */
   --danger:  255 69 58;     /* #FF453A */
+
+  /* Semantic palette — overrides hardcoded color usage across the app. Keep
+     in sync with tailwind.config.js (the matching `primary/reward/ai` tokens). */
+  --color-primary:  37 99 235;   /* #2563eb — blue, nav/primary actions */
+  --color-success:  34 197 94;   /* #22c55e — completed, streaks, positive */
+  --color-reward:   245 158 11;  /* #f59e0b — XP, rewards, priority */
+  --color-danger:   239 68 68;   /* #ef4444 — boss HP, overdue, urgent */
+  --color-ai:       168 85 247;  /* #a855f7 — AI assistant accent */
+  --color-career:   59 130 246;  /* #3b82f6 — blue */
+  --color-health:   34 197 94;   /* #22c55e — green */
+  --color-finance:  20 184 166;  /* #14b8a6 — teal */
+  --color-learning: 168 85 247;  /* #a855f7 — purple */
 
   /* Shadows — Apple-style soft layered shadows. Cards use --shadow-card. */
   --shadow-card:     0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.06);
@@ -380,9 +399,9 @@ body,
 body {
   background: rgb(var(--bg));
   color: rgb(var(--text));
-  /* System fonts only — SF Pro on Apple, Segoe UI on Windows, Roboto on Android. */
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* Inter for all UI text (loaded via Google Fonts in index.html), system fonts
+     as fallback so the app renders cleanly if the CDN is unreachable. */
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior-y: none;
@@ -390,6 +409,13 @@ body {
   font-size: 15px;
   line-height: 1.5;
   letter-spacing: -0.003em;
+}
+
+/* Display headings — Cal Sans / Plus Jakarta Sans. Applied via the Tailwind
+   `font-display` class and the `font-display` family that maps to this var. */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 /* ===== Typography utility classes — mirrors the brief's text scale =====

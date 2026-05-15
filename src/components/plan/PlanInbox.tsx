@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Inbox, Plus, Users, CheckCircle2 } from 'lucide-react'
+import { Inbox, Plus, Users, CheckCircle2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Empty } from '@/components/ui/Empty'
 import { Modal } from '@/components/ui/Modal'
+import { useAssistant } from '@/stores/assistantStore'
 import { useTasks } from '@/stores/tasksStore'
 import { todayISO } from '@/engine/dates'
 import { TaskRow } from './TaskRow'
@@ -24,6 +25,7 @@ export function PlanInbox() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Task | null>(null)
   const [filter, setFilter] = useState<'all' | AreaId>('all')
+  const openAssistant = useAssistant((s) => s.setPanelOpen)
 
   const { open, delegated, done } = useMemo(() => {
     const today = todayISO()
@@ -81,9 +83,21 @@ export function PlanInbox() {
       <>
         <Empty
           icon={Inbox}
-          title="Inbox zero."
-          body="Capture anything you don't want to forget. Quick-Add (+) anywhere in the app drops it here."
-          cta={<Button onClick={() => setAdding(true)}>New task</Button>}
+          title="Nothing here yet."
+          body="Capture anything you don't want to forget. Quick-Add (+) anywhere in the app drops it here — or let Ryse AI plan it for you."
+          cta={
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Button onClick={() => setAdding(true)}>New task</Button>
+              <button
+                type="button"
+                onClick={() => openAssistant(true)}
+                className="px-3 h-9 rounded-lg text-sm font-semibold inline-flex items-center gap-1.5 text-white"
+                style={{ background: 'rgb(var(--color-ai))' }}
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Help me plan it
+              </button>
+            </div>
+          }
         />
         <NewTaskModal open={adding} onClose={() => setAdding(false)} onSave={handleSave} />
       </>

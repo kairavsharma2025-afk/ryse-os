@@ -3,18 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useCharacter } from '@/stores/characterStore'
 import { useGoals } from '@/stores/goalsStore'
 import { useSchedule } from '@/stores/scheduleStore'
+import { currentSeason } from '@/stores/seasonStore'
 import { Empty } from '@/components/ui/Empty'
 import { Button } from '@/components/ui/Button'
-import { Swords } from 'lucide-react'
+import { Sparkles, Swords } from 'lucide-react'
 
 import { SmartBanner } from '@/components/home/SmartBanner'
 import { DailyBrief } from '@/components/home/DailyBrief'
-import { TaskCardScroller } from '@/components/home/TaskCardScroller'
+import { TodayTaskList } from '@/components/home/TodayTaskList'
 import { TimelineStrip } from '@/components/home/TimelineStrip'
 import { AtAGlanceMetrics } from '@/components/home/AtAGlanceMetrics'
 import { RitualTimeline } from '@/components/home/RitualTimeline'
 import { DailyQuests } from '@/components/quests/DailyQuests'
 import { StreakDashboard } from '@/components/streaks/StreakDashboard'
+import { AiSuggestionChip } from '@/components/assistant/AiSuggestionChip'
 import { todayLongLabel, todayISO } from '@/engine/dates'
 
 /**
@@ -64,7 +66,7 @@ export function Home() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <Greeting name={name} />
 
       {/* SmartBanner is desktop-only: high-context priority alerts are noisy on
@@ -73,18 +75,23 @@ export function Home() {
         <SmartBanner />
       </div>
 
+      {/* Priority hero + compact stats strip (DailyBrief now renders both). */}
       <DailyBrief />
-      <TaskCardScroller />
 
-      {/* Timeline is always visible on mobile (user wanted scroller + timeline
-          as the two main cards). On desktop it stays auto-promoted. */}
+      {/* Proactive AI suggestion — dismissible per day. */}
+      <AiSuggestionChip />
+
+      {/* Vertical task list — replaces the horizontal swipe deck. */}
+      <TodayTaskList />
+
+      {/* Timeline is always visible on mobile. On desktop it stays auto-promoted. */}
       <div className="md:hidden">
         <TimelineStrip />
       </div>
       <div className="hidden md:block">{timelinePromoted && <TimelineStrip />}</div>
 
       {/* Everything below is desktop-only — the mobile Home is intentionally
-          trimmed to greeting + brief + scroller + timeline. */}
+          trimmed to greeting + brief + tasks + timeline. */}
       <div className="hidden md:block space-y-8">
         <AtAGlanceMetrics />
         <RitualTimeline />
@@ -106,14 +113,43 @@ function Greeting({ name }: { name: string }) {
         : h < 17
           ? 'Good afternoon'
           : 'Good evening'
+  const nav = useNavigate()
+  const season = currentSeason()
   return (
-    <div>
-      <div className="text-xs text-muted uppercase tracking-wider mb-1">
-        {todayLongLabel()}
+    <div className="flex items-end justify-between gap-3 flex-wrap">
+      <div>
+        <div className="text-xs font-semibold tracking-widest uppercase text-muted mb-1">
+          {todayLongLabel()}
+        </div>
+        <h1 className="font-display text-xl text-text">
+          {stamp}, {name || 'Hero'}.
+        </h1>
       </div>
-      <h1 className="text-xl text-text">
-        {stamp}, {name || 'Hero'}.
-      </h1>
+      <button
+        type="button"
+        onClick={() => nav('/life')}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-reward/15 border border-reward/30 text-reward text-[11px] font-semibold uppercase tracking-wider hover:bg-reward/25 transition-colors duration-80"
+        title={season.name}
+      >
+        <Sparkles className="w-3 h-3" strokeWidth={2.2} />
+        Season {toRoman(season.number)}
+      </button>
     </div>
   )
+}
+
+function toRoman(n: number): string {
+  if (n <= 0) return ''
+  const map: [number, string][] = [
+    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
+  ]
+  let out = ''
+  let r = n
+  for (const [v, s] of map) {
+    while (r >= v) {
+      out += s
+      r -= v
+    }
+  }
+  return out
 }

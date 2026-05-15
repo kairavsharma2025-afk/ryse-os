@@ -123,7 +123,7 @@ export function DailyQuests() {
                       {q.linkedGoalId || q.linkedModule ? (
                         <button
                           onClick={() => actionCompleteQuest(q.id)}
-                          className="flex-1 text-[11px] uppercase tracking-wide text-muted hover:text-accent border border-border/60 hover:border-accent/40 rounded-md py-1.5 transition flex items-center justify-center gap-1.5"
+                          className="flex-1 text-[11px] uppercase tracking-wide font-semibold bg-success text-white hover:bg-success/85 rounded-md py-1.5 transition flex items-center justify-center gap-1.5"
                         >
                           <Check className="w-3 h-3" strokeWidth={2.5} />
                           Complete
@@ -131,7 +131,7 @@ export function DailyQuests() {
                       ) : null}
                       <button
                         onClick={() => skip(q.id)}
-                        className="flex-1 text-[11px] uppercase tracking-wide text-muted hover:text-text border border-border/60 hover:border-border rounded-md py-1.5 transition"
+                        className="flex-1 text-[11px] uppercase tracking-wide text-muted hover:text-text border border-border/60 hover:border-border/90 rounded-md py-1.5 transition"
                       >
                         Skip
                       </button>

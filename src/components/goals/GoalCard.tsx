@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, Skull, Check, Loader2, AlertTriangle } from 'lucide-react'
 import { Pill } from '@/components/ui/Pill'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { AREAS } from '@/data/areas'
 import { AREA_ICONS, STREAK_ICONS } from '@/components/icons'
 import { streakVisualState } from '@/engine/streakEngine'
@@ -129,13 +130,13 @@ export function GoalCard({ goal }: { goal: Goal }) {
 
           {milestonesTotal > 0 && (
             <div>
-              <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted mb-1">
+              <div className="flex items-center justify-between text-[10px] font-semibold tracking-widest uppercase text-muted mb-1">
                 <span>Milestones</span>
                 <span className="tabular-nums">
-                  {milestonesDone}/{milestonesTotal}
+                  {milestonesDone}/{milestonesTotal} · {Math.round(msPct)}%
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-surface2/70 overflow-hidden border border-border/30">
+              <div className="h-2 rounded-full bg-surface2/70 overflow-hidden border border-border/30">
                 <div
                   className="h-full rounded-full transition-[width] duration-500"
                   style={{
@@ -149,35 +150,66 @@ export function GoalCard({ goal }: { goal: Goal }) {
 
           {boss && !boss.defeated && (
             <div>
-              <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-red-400/90 mb-1">
-                <span>{boss.bossName} HP</span>
+              <div className="flex items-center justify-between text-[10px] font-semibold tracking-widest uppercase text-danger mb-1">
+                <Tooltip content="Your boss represents resistance to this goal. Damage it by logging progress daily.">
+                  <span className="inline-flex items-center gap-1 cursor-help">
+                    <Skull className="w-3 h-3" strokeWidth={2} />
+                    Boss HP {Math.round(bossPct * 100)}%
+                  </span>
+                </Tooltip>
                 <span className="tabular-nums">
                   {boss.currentHp}/{boss.bossHp}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-surface2/70 overflow-hidden border border-border/30">
+              <div className="h-2 rounded-full bg-surface2/70 overflow-hidden border border-border/30">
                 <div
-                  className="h-full rounded-full transition-[width] duration-500 bg-gradient-to-r from-red-500 to-red-400"
-                  style={{ width: `${bossPct * 100}%` }}
+                  className="h-full rounded-full transition-[width] duration-500"
+                  style={{
+                    width: `${bossPct * 100}%`,
+                    background: 'linear-gradient(90deg, rgb(var(--color-danger)), rgb(239 68 68 / 0.85))',
+                  }}
                 />
               </div>
             </div>
           )}
 
           <div className="flex items-center justify-between gap-2 pt-1">
-            <div className="text-[11px] text-muted flex items-center gap-1.5 min-w-0">
-              {atRisk ? (
-                <span className="inline-flex items-center gap-1 text-amber-400">
-                  <AlertTriangle className="w-3 h-3" strokeWidth={2.2} />
-                  At risk · {lastAge}d
-                </span>
-              ) : lastAge === null ? (
-                <span className="text-muted/70 italic">never logged</span>
-              ) : lastAge === 0 ? (
-                <span className="text-success">logged today</span>
-              ) : (
-                <span>last log {lastAge}d ago</span>
-              )}
+            <div className="text-[11px] flex items-center gap-1.5 min-w-0">
+              {(() => {
+                // last-logged warning ramp:
+                //   today        → green "logged today"
+                //   1–2d         → muted neutral
+                //   3–5d         → amber
+                //   >5d / never  → red
+                if (lastAge === null) {
+                  return (
+                    <span className="inline-flex items-center gap-1 text-danger">
+                      <AlertTriangle className="w-3 h-3" strokeWidth={2.2} />
+                      never logged
+                    </span>
+                  )
+                }
+                if (lastAge === 0) {
+                  return <span className="text-success font-medium">logged today</span>
+                }
+                if (lastAge > 5 || atRisk) {
+                  return (
+                    <span className="inline-flex items-center gap-1 text-danger">
+                      <AlertTriangle className="w-3 h-3" strokeWidth={2.2} />
+                      last logged {lastAge}d ago
+                    </span>
+                  )
+                }
+                if (lastAge > 2) {
+                  return (
+                    <span className="inline-flex items-center gap-1 text-warning">
+                      <AlertTriangle className="w-3 h-3" strokeWidth={2.2} />
+                      last logged {lastAge}d ago
+                    </span>
+                  )
+                }
+                return <span className="text-muted">last logged {lastAge}d ago</span>
+              })()}
             </div>
 
             <div className="relative">

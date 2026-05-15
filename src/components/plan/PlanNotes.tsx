@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pin, PinOff, Trash2, StickyNote, Plus } from 'lucide-react'
+import { Pin, PinOff, Trash2, StickyNote, Plus, Sparkles } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Empty } from '@/components/ui/Empty'
 import { Modal } from '@/components/ui/Modal'
 import { useNotes } from '@/stores/notesStore'
+import { useAssistant } from '@/stores/assistantStore'
 import { AREA_LIST, AREAS } from '@/data/areas'
 import type { AreaId, Note } from '@/types'
 
@@ -32,6 +33,7 @@ export function PlanNotes() {
 
   const [editing, setEditing] = useState<Note | null>(null)
   const [adding, setAdding] = useState(false)
+  const openAssistant = useAssistant((s) => s.setPanelOpen)
 
   const { pinned, recent } = useMemo(() => {
     const sorted = [...notes].sort((a, b) =>
@@ -48,9 +50,21 @@ export function PlanNotes() {
       <>
         <Empty
           icon={StickyNote}
-          title="Capture anything."
-          body="Ideas, snippets from a call, half-formed plans. Notes that don't have a date yet live here."
-          cta={<Button onClick={() => setAdding(true)}>New note</Button>}
+          title="Nothing here yet."
+          body="Ideas, snippets from a call, half-formed plans — or ask Ryse AI to outline something with you."
+          cta={
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Button onClick={() => setAdding(true)}>New note</Button>
+              <button
+                type="button"
+                onClick={() => openAssistant(true)}
+                className="px-3 h-9 rounded-lg text-sm font-semibold inline-flex items-center gap-1.5 text-white"
+                style={{ background: 'rgb(var(--color-ai))' }}
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Help me plan it
+              </button>
+            </div>
+          }
         />
         <NoteEditorModal
           open={adding}

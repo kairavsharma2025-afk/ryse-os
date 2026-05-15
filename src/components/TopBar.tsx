@@ -1,9 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
 import { Bell, Search } from 'lucide-react'
 import { useCharacter } from '@/stores/characterStore'
 import { useNotifications } from '@/stores/notificationsStore'
+import { useAssistant } from '@/stores/assistantStore'
 import { Avatar } from '@/components/character/Avatar'
+import { AssistantStatusPill } from '@/components/assistant/AssistantStatusPill'
 
 const ROUTE_LABELS: Record<string, string> = {
   '/': 'Today',
@@ -31,19 +32,25 @@ export function TopBar() {
   const nav = useNavigate()
   const character = useCharacter()
   const unread = useNotifications((s) => s.unreadCount())
+  const thinking = useAssistant((s) => s.thinking)
   const pageLabel = ROUTE_LABELS[loc.pathname] ?? 'Ryse'
-  const dateLabel = format(new Date(), 'd MMM').toUpperCase()
 
   return (
     <div className="hidden md:flex items-center gap-4 px-8 pt-6 pb-3 sticky top-0 z-20 bg-surface/40 backdrop-blur-md border-b border-border/30">
-      {/* page heading + date */}
-      <div className="flex items-baseline gap-3 min-w-0">
+      {/* page heading only — the date moved into the Today greeting to remove
+          the redundant top-right "15 MAY"-style badge. */}
+      <div className="flex items-baseline gap-2 min-w-0">
         <h2 className="font-display font-bold text-xl tracking-tight text-text truncate">
           {pageLabel}
         </h2>
-        <span className="text-xs uppercase tracking-[0.24em] text-muted whitespace-nowrap">
-          {dateLabel}
-        </span>
+        {thinking && (
+          <span
+            className="inline-block w-2 h-2 rounded-full animate-pulseDot ml-1"
+            style={{ background: 'rgb(var(--color-ai))' }}
+            title="AI is working…"
+            aria-label="AI is working"
+          />
+        )}
       </div>
 
       {/* search pill — fills the empty space */}
@@ -59,6 +66,7 @@ export function TopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2.5">
+        <AssistantStatusPill />
         <button
           onClick={() => nav('/reminders')}
           className="relative w-10 h-10 rounded-full bg-surface2/60 border border-border/60 flex items-center justify-center text-muted hover:text-accent hover:border-accent/40 transition-colors"

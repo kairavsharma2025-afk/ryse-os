@@ -47,19 +47,21 @@ export function RitualTimeline() {
               )}
               <div className="flex items-start gap-2">
                 <div
-                  className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
+                  className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold tabular-nums border-2 ${
                     isDone
-                      ? 'bg-accent/10 text-accent/60'
+                      ? 'bg-success border-success text-white'
                       : isUpNext
-                        ? 'bg-accent/15 text-accent'
-                        : 'bg-surface2/60 text-accent2'
+                        ? 'border-accent text-accent bg-accent/10'
+                        : 'border-border/60 text-muted'
                   }`}
+                  aria-hidden="true"
                 >
-                  {Icon && <Icon className="w-5 h-5" strokeWidth={1.7} />}
+                  {isDone ? <Check className="w-4 h-4" strokeWidth={2.6} /> : i + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[10px] uppercase tracking-wide text-muted">
-                    Step {i + 1} · +{s.xpReward} XP
+                  <div className="text-[10px] uppercase tracking-wide text-muted flex items-center gap-1.5">
+                    <span>Step {i + 1}</span>
+                    <span className="text-reward font-bold">+{s.xpReward} XP</span>
                   </div>
                   <div
                     className={`text-sm font-medium truncate ${
@@ -72,8 +74,11 @@ export function RitualTimeline() {
                     {s.description}
                   </div>
                 </div>
-                {isDone && (
-                  <Check className="w-4 h-4 text-accent shrink-0" strokeWidth={2.5} />
+                {Icon && (
+                  <Icon
+                    className={`w-4 h-4 shrink-0 ${isDone ? 'text-accent/50' : 'text-accent2'}`}
+                    strokeWidth={1.7}
+                  />
                 )}
               </div>
             </motion.button>

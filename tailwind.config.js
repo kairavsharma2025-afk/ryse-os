@@ -26,29 +26,19 @@ export default {
         success: 'rgb(var(--success) / <alpha-value>)',
         warning: 'rgb(var(--warning) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)',
+        // Semantic palette — referenced via Tailwind classes like text-reward,
+        // bg-ai/15, border-primary/40, etc. Mirrors the --color-* CSS vars in
+        // index.css so component code can use either Tailwind or raw vars.
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        reward: 'rgb(var(--color-reward) / <alpha-value>)',
+        ai: 'rgb(var(--color-ai) / <alpha-value>)',
       },
       fontFamily: {
-        // System fonts only — no web-font loading. Mirrors the brief.
-        display: [
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'system-ui',
-          'Segoe UI',
-          'Roboto',
-          'Helvetica Neue',
-          'Arial',
-          'sans-serif',
-        ],
-        sans: [
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'system-ui',
-          'Segoe UI',
-          'Roboto',
-          'Helvetica Neue',
-          'Arial',
-          'sans-serif',
-        ],
+        // Display = Cal Sans / Plus Jakarta Sans, UI = Inter. Both resolve via
+        // CSS vars so the index.css file is the single source of truth.
+        display: ['var(--font-display)'],
+        sans: ['var(--font-ui)'],
+        ui: ['var(--font-ui)'],
         mono: ['ui-monospace', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
         rpg: ['Cinzel', 'Georgia', 'serif'],
       },
@@ -96,6 +86,19 @@ export default {
           '0%': { transform: 'translateY(0)', opacity: '1' },
           '100%': { transform: 'translateY(-32px)', opacity: '0' },
         },
+        xpFloat: {
+          '0%':   { transform: 'translateY(0) scale(0.95)',  opacity: '0' },
+          '15%':  { transform: 'translateY(-4px) scale(1)',  opacity: '1' },
+          '100%': { transform: 'translateY(-40px) scale(1)', opacity: '0' },
+        },
+        completeFlash: {
+          '0%':   { background: 'rgb(34 197 94 / 0.18)' },
+          '100%': { background: 'rgb(34 197 94 / 0)' },
+        },
+        pulseDot: {
+          '0%, 100%': { transform: 'scale(1)',   opacity: '1' },
+          '50%':       { transform: 'scale(1.4)', opacity: '0.6' },
+        },
         breathe: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.004)' },
@@ -114,6 +117,9 @@ export default {
         pulseGlow: 'pulseGlow 2s ease-in-out infinite',
         shimmer: 'shimmer 2.4s linear infinite',
         floatUp: 'floatUp 1s ease-out forwards',
+        xpFloat: 'xpFloat 1.2s ease-out forwards',
+        completeFlash: 'completeFlash 600ms ease-out forwards',
+        pulseDot: 'pulseDot 1.6s ease-in-out infinite',
         breathe: 'breathe 3s ease-in-out infinite',
         toastIn: 'toastIn 200ms ease-out forwards',
         skeleton: 'skeletonShimmer 1.4s linear infinite',
