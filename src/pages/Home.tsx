@@ -21,9 +21,9 @@ import { todayLongLabel, todayISO } from '@/engine/dates'
  * The 8-section home page from the 2026 redesign:
  *   1. Smart Banner (priority-queued, ONE at a time)
  *   2. Daily Brief (Day / Energy / Wins + #1 priority callout)
- *   3. Task Card Scroller (centerpiece)
- *   4. At-a-glance metrics (focus / boss / streak)
- *   5. Timeline strip (auto-promoted if ≥3 events today)
+ *   3. Task Card Scroller (centerpiece — sits directly under the brief)
+ *   4. Timeline strip (auto-promoted if ≥3 events today)
+ *   5. At-a-glance metrics (focus / boss / streak)
  *   6. Ritual quick-tap
  *   7. Daily Quests (kept — already a horizontal swipeable strip)
  *   8. Streaks + Boss merge (StreakDashboard)
@@ -68,8 +68,8 @@ export function Home() {
       <Greeting name={name} />
       <SmartBanner />
       <DailyBrief />
-      {timelinePromoted && <TimelineStrip />}
       <TaskCardScroller />
+      {timelinePromoted && <TimelineStrip />}
       <AtAGlanceMetrics />
       <RitualTimeline />
       <DailyQuests />
