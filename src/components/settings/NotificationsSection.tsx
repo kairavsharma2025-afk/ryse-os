@@ -8,6 +8,7 @@ import { useSettings } from '@/stores/settingsStore'
 import { useBirthdays } from '@/stores/birthdaysStore'
 import { SettingsSection } from './SettingsSection'
 import { isNative, sendTestNotification } from '@/engine/nativeNotifications'
+import { pushReady } from '@/sync/push'
 
 const daysInMonth = (year: number, m1to12: number) => new Date(year, m1to12, 0).getDate()
 
@@ -51,6 +52,7 @@ export function NotificationsSection() {
   }
 
   const native = isNative()
+  const webPushReady = !native && pushReady()
   const [testState, setTestState] = useState<'idle' | 'firing' | 'fired' | 'denied'>('idle')
   const fireTest = async () => {
     setTestState('firing')
@@ -124,7 +126,9 @@ export function NotificationsSection() {
               <div className="text-[11px] text-muted mt-0.5">
                 {native
                   ? 'Both lock-screen and in-app pings on.'
-                  : 'Desktop pings on for reminders. In-app notifications always work too.'}
+                  : webPushReady
+                  ? 'Lock-screen + desktop pings fire even when this tab is closed.'
+                  : 'Pings fire while this tab is open. For background notifications, install Ryse as a PWA (browser menu → Install) or open it on a phone.'}
               </div>
               {!native && (
                 <div className="mt-3">

@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { pushSubscriptions, scheduledPushes } from '../db/schema.js'
-import { getUserId } from './_lib/auth.js'
+import { getPushIdentity } from './_lib/auth.js'
 
 /**
  *   POST  /api/push        — save a push subscription for the signed-in user
@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const userId = await getUserId(req)
+  const userId = await getPushIdentity(req)
   if (!userId) {
     res.status(401).json({ error: 'unauthorized' })
     return

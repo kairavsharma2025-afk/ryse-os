@@ -8,9 +8,13 @@
 //   • syncPushSchedule(reminders, quietHours) — recomputes the next 48h of
 //     reminder fires and PUTs them as a replace-all schedule.
 //
-// Everything no-ops gracefully if VAPID isn't configured, the browser lacks
-// the Push API, the user hasn't granted notification permission, or the sync
-// account isn't signed in.
+// Auth: when the user is signed in for sync the subscription attaches to
+// their account so multiple devices share a schedule. Otherwise we fall back
+// to an anonymous per-device uuid (X-Device-Id header) so background pings
+// still work for users who never signed up.
+//
+// No-ops gracefully if VAPID isn't configured, the browser lacks the Push
+// API, or the user hasn't granted notification permission.
 
 import { format } from 'date-fns'
 import type { Reminder } from '@/types'
@@ -18,7 +22,7 @@ import type { QuietHours } from '@/engine/remindersEngine'
 import { upcomingReminders } from '@/engine/remindersEngine'
 import { useBirthdays } from '@/stores/birthdaysStore'
 import { todayISO } from '@/engine/dates'
-import { syncEnabled, getSyncToken } from './client'
+import { getSyncToken, getDeviceId } from './client'
 
 const VAPID_PUBLIC = (import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '') as string
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
@@ -33,10 +37,14 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return out
 }
 
-function pushHeaders(): Record<string, string> | null {
+function pushHeaders(): Record<string, string> {
   const token = getSyncToken()
-  if (!token) return null
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  if (token) {
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  }
+  // Anonymous: identify by stable per-device uuid so the server can route
+  // scheduled pushes back to subscriptions on this device.
+  return { 'Content-Type': 'application/json', 'X-Device-Id': getDeviceId() }
 }
 
 export function pushReady(): boolean {
@@ -46,14 +54,12 @@ export function pushReady(): boolean {
   if (!VAPID_PUBLIC) return false
   if (typeof Notification === 'undefined') return false
   if (Notification.permission !== 'granted') return false
-  if (!syncEnabled()) return false
   return true
 }
 
 export async function ensurePushSubscription(): Promise<void> {
   if (!pushReady()) return
   const headers = pushHeaders()
-  if (!headers) return
   try {
     const reg = await navigator.serviceWorker.ready
     let sub = await reg.pushManager.getSubscription()
@@ -147,8 +153,11 @@ export async function syncPushSchedule(
   quietHours?: QuietHours
 ): Promise<void> {
   if (!pushReady()) return
+  // Re-check subscription each time — the user might have granted notification
+  // permission after Layout's initial ensurePushSubscription() ran. Idempotent
+  // when already subscribed.
+  await ensurePushSubscription()
   const headers = pushHeaders()
-  if (!headers) return
   const pushes = [...buildReminderPushes(reminders, quietHours), ...buildBirthdayPushes()]
   try {
     await fetch(`${API_BASE}/api/push`, {

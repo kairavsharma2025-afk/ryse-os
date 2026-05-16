@@ -10,8 +10,43 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
 const SYNC_USER_KEY = 'lifeos:v1:__sync_user_id'
 const SYNC_TOKEN_KEY = 'lifeos:v1:__sync_token'
 const SYNC_EMAIL_KEY = 'lifeos:v1:__sync_email'
+// Device identity for anonymous web push (so background notifications work
+// without requiring email/password sign-in for sync). 122 bits of entropy in
+// a UUID is enough that knowing the value is the credential — same threat
+// model as the existing sync user_id pairing in api/pair.ts.
+const DEVICE_ID_KEY = 'lifeos:v1:__device_id'
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function randomUuid(): string {
+  const c = (typeof crypto !== 'undefined' ? crypto : undefined) as Crypto | undefined
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  // Fallback for older webviews — RFC4122 v4 from getRandomValues.
+  const b = new Uint8Array(16)
+  c!.getRandomValues(b)
+  b[6] = (b[6] & 0x0f) | 0x40
+  b[8] = (b[8] & 0x3f) | 0x80
+  const hex = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/**
+ * Returns the stable per-device UUID, generating one on first call. Used as
+ * the identity for anonymous web push subscriptions so users get background
+ * notifications without having to sign in.
+ */
+export function getDeviceId(): string {
+  try {
+    const cur = localStorage.getItem(DEVICE_ID_KEY)
+    if (cur && UUID_V4.test(cur)) return cur.toLowerCase()
+    const fresh = randomUuid()
+    localStorage.setItem(DEVICE_ID_KEY, fresh)
+    return fresh
+  } catch {
+    // localStorage unavailable — return an ephemeral id; push won't persist across reloads.
+    return randomUuid()
+  }
+}
 
 export function getSyncUserId(): string | null {
   try {
